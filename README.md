@@ -3,10 +3,10 @@ Space Attack
 Retro "Space Invaders" style arcade game made in Fortran.
 -----------------------------------------------------------------------------------
 
-Although Space Attack is playable it is still a work in progress. I have grand plans to include new enemies, weapons, waves, powerups, and more!
+Although Space Attack is playable it is still a work in progress. I have grand plans to include new enemies, weapons, waves, power-ups, and more!
 
 ##Motivation
-  I decided it would be a great experience to try and re-produce the old arcade game Space Invaders in Fortran.  My initial Google searches yielded only knowledge that Fortran is bad for making games.  I decided to attempt it anyways.  Throughout the project I ran into several setbacks which required me to learn more about programming and craft creative solutions.
+  I decided it would be a great experience to try and re-produce the old arcade game Space Invaders in Fortran.  My initial Google searches suggested that Fortran is bad for making games.  I decided to attempt it anyway.  Throughout the project I ran into several setbacks that required learning more about Fortran and crafting creative solutions.
 
 ####Setbacks
 1) Modular - I wanted the game to fit any size terminal
@@ -27,7 +27,7 @@ Although Space Attack is playable it is still a work in progress. I have grand p
 3b) Graphics 2 - Create independent graphics file containing animation subroutines, each of which is 3 "frames" long
 
 ###Conclusion
-  This project has taught me a tremendous amount of information about programming techniques and possibilities.  It broadened my skillset to include parallel programming and compiling of multiple source files, and also challenged me at every turn.  Ultimately this project remains a work in progress which I will tackle during my free time.
+  I've learned a tremendous amount about programming techniques and possibilities.  It added parallel programming and compiling of multiple source files to my skill set.  Space Attack remains a work in progress waiting for more of my free time.
 
 
 ##Screenshots
