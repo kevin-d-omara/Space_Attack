@@ -27,7 +27,7 @@ Although Space Attack is playable it is still a work in progress. I have grand p
 3b) Graphics 2 - Create independent graphics file containing animation subroutines, each of which is 3 "frames" long
 
 ###Conclusion
-  I've learned a tremendous amount about programming techniques and possibilities.  It added parallel programming and compiling of multiple source files to my skill set.  Space Attack remains a work in progress waiting for more of my free time.
+  I've learned a tremendous amount about programming techniques and possibilities.  I've added parallel programming and compiling of multiple source files to my skill set.  Space Attack remains a work in progress waiting for more of my free time.
 
 
 ##Screenshots
