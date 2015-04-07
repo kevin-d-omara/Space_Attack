@@ -89,8 +89,7 @@ RETURN
 END SUBROUTINE laser_move
 
 !-------OPEN SPACE-------OPEN SPACE-------OPEN SPACE-------
-SUBROUTINE space(frame)
-	INTEGER :: frame
+SUBROUTINE space()
 
 WRITE(*,9001, advance='no') '   '
 9001 FORMAT(A)	!Format label

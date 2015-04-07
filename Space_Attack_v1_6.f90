@@ -72,7 +72,7 @@ PROGRAM array_invaders
 !----------BEGIN GAME----------BEGIN GAME----------BEGIN GAME----------BEGIN GAME----------!
 !------------------------------------------------------------------------------------------!
 
-	777 CALL controls(shoot,right,left,yesno,i)		!Determine Controls and Terminal Size
+	777 CALL controls(shoot,right,left,yesno,i,j,row,col)		!Determine Controls and Terminal Size
 	CALL initialize(x,x00,i,j,row,col,endgame,frame,charge,updown,shots,hits,kills,score,wave)	!Initialize Positions and Variables
 		call printscreen(i,j,row,col,x,flip,rl,gcommand,left,right,shoot,frame,numcol,charge,updown,score,wave)
 
@@ -83,25 +83,27 @@ PROGRAM array_invaders
 !$OMP PARALLEL
 	!$OMP SECTIONS
 	!$OMP SECTION
-		10 CALL movement(x00, i, j, k, h, flip,x,row,col,endgame,kills,hits,score,wincon)	!Movement/Collisions
-			IF (endgame==0) GOTO 666	!endgame=0 (You Lose)
-			IF (endgame==9) GOTO 999	!endgame=9 (You Win)
-		CALL laser(i,j,row,col,x)	!Laser Movement
-		CALL commands(command,shoot,left,right,j,row,col,x,gcommand,charge,updown,shots)	!Player's Command
-
-		70 CALL printscreen(i,j,row,col,x,flip,rl,gcommand,left,right,shoot,frame,numcol,charge,updown,score,wave)	!Print Screen
-			IF (frame<3) THEN					!This is where the 3 frame animation comes from.
-				CALL game_timer(start,finish)		!Timer to allow a pause between frames.
-				frame=frame+1
-				GOTO 70
-			ELSE
-				CALL game_timer(start,finish)		!Timer
-				frame=1; !reset frame
-				GOTO 10		!Loop back to Movement/Collisions
-			END IF					
-		666 WRITE(*,*) 'Game over man, game over! (hit any key to continue)'; GOTO 888	!EXIT LOOP
-		999 WRITE(*,*) "You did it, you killed them all! (hit any key to continue)"	!EXIT LOOP
-		888 CONTINUE		
+	!$OMP SECTION
+		10 CALL movement(x00, i, j, k, h, flip,x,row,col,endgame,kills,hits,score,wincon)		!Movement/Collisions
+		   IF (endgame==1) THEN		!Game On!
+			CALL laser(i,j,row,col,x)								!Laser Movement
+			CALL commands(command,shoot,left,right,j,row,col,x,gcommand,charge,updown,shots)	!Player's Command
+			70 CALL printscreen(i,j,row,col,x,flip,rl,gcommand,left,right,shoot,frame,numcol&
+						,charge,updown,score,wave)					!Print Screen
+				IF (frame<3) THEN				!This is where the 3 frame animation comes from.
+					CALL game_timer(start,finish)		!Timer to allow a pause between frames.
+					frame=frame+1
+					GOTO 70	!printscreen again
+				ELSE
+					CALL game_timer(start,finish)		!Timer
+					frame=1; !reset frame count
+					GOTO 10	 !Loop back to Movement/Collisions
+				END IF	
+		   ELSE IF (endgame==0) THEN
+			WRITE(*,*) 'Game over man, game over! (hit any key to continue)'	!EXIT LOOP
+		   ELSE		!endgame==9
+			WRITE(*,*) "You did it, you killed them all! (hit any key to continue)"	!EXIT LOOP
+		   END IF		
 	!$OMP SECTION
 		60 CALL enter_command(command)		!Repetedly lets the user enter a command
 		IF (endgame==1) GOTO 60			!endgame=1 means the game is still going (no win or lose)
@@ -134,36 +136,40 @@ END PROGRAM array_invaders
 
 
 !--------Controls--------Controls--------Controls-------Controls--------Controls--------Controls-------Controls-------
-SUBROUTINE controls(shoot,right,left,yesno,i)		!This is the very first subroutine called. It allows the user to
+SUBROUTINE controls(shoot,right,left,yesno,i,j,row,col)	!This is the very first subroutine called. It allows the user to
 	IMPLICIT NONE					!appropriately resize their terminal and then set ther controls.
 	CHARACTER(1) :: shoot, right, left		!If the terminal is too tall (width is irrelevant) then the player
-	INTEGER :: yesno,i				!can "see into the past" (see the previous frame).
+	INTEGER :: yesno, i, j				!can "see into the past" (see the previous frame).
+	INTEGER, intent(in) :: row, col
 							
 call execute_command_line('clear')	!Clear screen before printing
 !All of these dumb "&" signs are the only way to get past the compiler, it thinks the lines are to long otherwise
-		WRITE(*,*) '┌─────────────────────────────&
+		WRITE(*,9000) '┌─────────────────────────────&
 		&──────────────────┐'
-		WRITE(*,*) '│       ✭✭✭ Welcome to Space A&
+		WRITE(*,9000) '│       ✭✭✭ Welcome to Space A&
 		&ttack! ✭✭✭        │'
-		WRITE(*,*) '│                             &
+		WRITE(*,9000) '│                             &
 		&                  │'
-		WRITE(*,*) '│         ♅ ♅ ♅   ♃  ♄  ☫  &
+		WRITE(*,9000) '│         ♅ ♅ ♅   ♃  ♄  ☫  &
 		&♇  ☿  ♅ ♅ ♅          │'
-		WRITE(*,*) '│                             &
+		WRITE(*,9000) '│                             &
 		&                  │'
-		WRITE(*,*) '│  Please adjust the height of&
+		WRITE(*,9000) '│  Please adjust the height of&
 		& your terminal to │'
-		WRITE(*,*) '│              fit the border &
+		WRITE(*,9000) '│              fit the border &
 		&now.              │'
-		WRITE(*,*) '│                             &
+		WRITE(*,9000) '│                             &
 		&                  │'
-		WRITE(*,*) '│          Press any key to co&
+		WRITE(*,9000) '│          Press any key to co&
 		&ntinue            │'
-		DO i=1,14	!Fill in spaces
-			WRITE(*,*) '│                             &
-			&                  │'
+		DO i=1, row-5		!Fills in empty rows
+			WRITE(*,9000,advance='no') '│ '
+			DO j=1,col	!Fills in empty columns
+				call space()
+			END DO
+			WRITE(*,9000) ' │'
 		END DO
-		WRITE(*,*) '└─────────────────────────────&
+		WRITE(*,9000) '└─────────────────────────────&
 		&──────────────────┘'
 		READ(*,*) 
 20 WRITE(*,*) 'Please enter your commands. W,D,A are recommended.'
@@ -188,6 +194,9 @@ IF (yesno==1) THEN
 	GOTO 20
 ELSE
 END IF
+
+9000 FORMAT(A)	!To allow the advance=no clause
+!NOTE: even for 'unformatted' statements this is needed, otherwise spacing is different
 
 RETURN
 END SUBROUTINE controls
@@ -450,18 +459,18 @@ DO i=1,(row-1)		!scale rows (-player row)
 				IF(x(i,j)==6) THEN
 					call invader_r(frame)
 				ELSE
-					call space(frame)
+					call space()
 				END IF
 			ELSE	!moving left
 				IF(x(i,j)==6) THEN
 					call invader_l(frame)
 				ELSE
-					call space(frame)
+					call space()
 				END IF
 			END IF
 		ELSE	!Laser row
 			IF(x(i,j)==0) THEN
-				call space(frame)
+				call space()
 			ELSE
 				call laser_move(frame)
 			END IF
@@ -485,7 +494,7 @@ DO j=1,col	!scale columns
 	IF (gcommand==right) THEN	!MOVE RIGHT ANIMATION
 		IF (j==1) WRITE(*,9000,advance='no') '│'	!Left border
 		IF(x(row,j)==0) THEN	!Open space 
-			call space(frame)
+			call space()
 		ELSE
 			IF(gcommand==left) THEN		!Move left
 				call player_l(frame)
@@ -499,7 +508,7 @@ DO j=1,col	!scale columns
 	ELSE IF (gcommand==left) THEN	!MOVE LEFT ANIMATION
 			IF (j==1) WRITE(*,9000,advance='no') '│ '	!Left border
 		IF(x(row,j)==0) THEN	!Open space 
-			call space(frame)
+			call space()
 		ELSE
 			IF(gcommand==left) THEN		!Move left
 				call player_l(frame)
@@ -513,7 +522,7 @@ DO j=1,col	!scale columns
 	ELSE			!SHOOT/IDLE ANIMATION
 		IF (j==1) WRITE(*,9000,advance='no') '│ '	!Left border
 		IF(x(row,j)==0) THEN	!Open space 
-			call space(frame)
+			call space()
 		ELSE
 			IF(gcommand==left) THEN		!Move left
 				call player_l(frame)
