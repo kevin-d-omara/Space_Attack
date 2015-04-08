@@ -41,13 +41,13 @@ Space Attack utilizes OpenMP to handle parallel tasks and therefore requires a c
 To compile, type the following after the command prompt (">"):
   >export OMP_NUM_THREADS=16
   
-  >gfortran -fopemp -c Space_Attack_v1_6.f90
+  >gfortran -fopenmp -c Space_Attack_v1_6.f90
   
   >gfortran -c sys_keyin.c
   
   >gfortran -c graphics_sub.f90
   
-  >gfortran -fopenmp -c sys_keyin.c graphics_sub.o Space_Attack_v1_6.o
+  >gfortran -fopenmp sys_keyin.c graphics_sub.o Space_Attack_v1_6.o
 
 Viola!  Type "./a.out" and enjoy =)
 
