@@ -7,7 +7,7 @@ PROGRAM array_invaders
 !
 ! To Compile:
 !	>export OMP_NUM_THREADS=16	(Must do this step every time you open a new terminal!)
-!	>gfortran -fopenmp -c Space_Attack_v1_6.f90
+!	>gfortran -fopenmp -c Space_Attack_v1_7.f90
 !	>gfortran -c sys_keyin.c
 !	>gfortran -c graphics_sub.f90
 !	>gfortran -fopenmp sys_keyin.o graphics_sub.o Space_Attack_v1_6.o
