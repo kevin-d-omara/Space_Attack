@@ -183,3 +183,79 @@ END IF
 9001 FORMAT(A)	!Format label
 RETURN
 END SUBROUTINE wcharge_idle
+
+!-------PRINT MENU-------PRINT MENU-------PRINT MENU-------PRINT MENU-------
+SUBROUTINE print_menu(i,j,k,row,col,string,buffer,length,row_num,last)
+IMPLICIT NONE
+INTEGER :: i, j, k, buffer, length(10), row_num(10), last
+INTEGER, intent(in) :: row, col
+ CHARACTER (3*col), DIMENSION(10) :: string
+
+k=1		!initialize index (for row, length, and string)
+DO i=1,row+5
+	IF (i==1) THEN		!Top border
+		WRITE(*,9000, advance='no') '┌'
+		DO j=1,3*col+2
+			WRITE(*,9000, advance='no') '─'
+		END DO
+		WRITE(*,9000) '┐'
+
+	ELSE IF (i==row_num(k)) THEN
+		buffer=(3*col-length(k))/2
+		WRITE(*,9000, advance='no') '│ '
+		DO j=1,buffer			!left side buffer
+			WRITE(*,9000, advance='no') ' '
+		END DO
+		WRITE(*,9000, advance='no') trim(string(k))
+		IF (mod(length(k),2)>0) buffer=buffer-1
+		DO j=3*col-buffer,3*col		!right side buffer
+			WRITE(*,9000, advance='no') ' '
+		END DO
+		WRITE(*,9000) ' │'
+		IF (k<last) k=k+1	!update indices
+
+	ELSE IF (i<row+5) THEN	!Fills in empty rows
+		WRITE(*,9000,advance='no') '│ '
+		DO j=1,col
+			call space()
+		END DO
+		WRITE(*,9000) ' │'
+
+	ELSE			!Bottom border
+		WRITE(*,9000, advance='no') '└'
+		DO j=1,3*col+2
+			WRITE(*,9000, advance='no') '─'
+		END DO
+		WRITE(*,9000) '┘'
+	END IF
+END DO
+
+9000 FORMAT(A)	!Format label
+END SUBROUTINE print_menu
+
+!-------MAIN MENU-------MAIN MENU-------MAIN MENU-------MAIN MENU-------
+SUBROUTINE menu_main(string,length,row_num,last,col)
+	IMPLICIT NONE
+	CHARACTER(3*col), DIMENSION(10) :: string
+	INTEGER, intent(in) :: col
+	INTEGER :: length(10), row_num(10), last
+
+	string(1)='✭✭✭ Welcome to Space Attack! ✭✭✭'
+	length(1)=32;	row_num(1)=2
+
+	string(2)='♅  ♓  ♃  ♄  ☫  ♑  ♇  ☿  ♅'
+	length(2)=25;	row_num(2)=4
+
+	string(3)='Please adjust the height of your terminal to'
+	length(3)=44;	row_num(3)=6
+
+	string(4)='fit the border now.'
+	length(4)=19;	row_num(4)=7
+
+	string(5)='Press any key to continue.'
+	length(5)=26;	row_num(5)=9
+
+	last=5
+
+RETURN
+END SUBROUTINE menu_main

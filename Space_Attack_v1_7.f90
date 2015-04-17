@@ -25,6 +25,7 @@ PROGRAM array_invaders
 !	1.6	K. O'Mara	04/04/15	made graphics have 3 frames (i.e. smoother)
 !						added win condition (finally!) and pre-game terminal size fit
 !	1.6.1	K. O'Mara	04/05/15	added new comments to make more presentable
+!	1.7	K. O'Mara	04/16/15	replaced game_timer with a c function (nanosleep) and made menu screen modular
 !
 !
 ! GOTO Statements:
@@ -34,7 +35,6 @@ PROGRAM array_invaders
 !	20	Beginning of Determine Controls
 !	30	End rowfinder spawn
 !	40	End MOVE RIGHT sequence
-!	50	Game Timer
 !	60	Enter Command Loopback
 !	70	Print Screen
 !	80	Exit Win Condition Loop
@@ -63,16 +63,18 @@ PROGRAM array_invaders
 
 	IMPLICIT NONE
 	INTEGER, PARAMETER :: row=19, col=15	!#rows must be = 4N+3 for code to work // (X-3)/4=N
-	INTEGER :: endgame, x00, i, j, k, h, flip, yesno, frame, rl, numcol, charge, updown, shots, kills, hits, score, wincon, wave
+	INTEGER :: endgame, x00, i, j, k, h, flip, yesno, frame, rl, numcol, charge, updown, shots, kills, hits
+	INTEGER ::  score, wincon, wave, buffer, last, length(10), row_num(10)
 	INTEGER, DIMENSION (row,col) :: x
 	REAL :: start, finish
 	CHARACTER(1) ::	command, shoot, right, left, gcommand	!C(LEN=1) == C(1) == C
+	CHARACTER(3*col), DIMENSION(10) :: string
 
 !------------------------------------------------------------------------------------------!
 !----------BEGIN GAME----------BEGIN GAME----------BEGIN GAME----------BEGIN GAME----------!
 !------------------------------------------------------------------------------------------!
 
-	777 CALL controls(shoot,right,left,yesno,i,j,row,col)		!Determine Controls and Terminal Size
+	777 CALL controls(shoot,right,left,yesno,i,j,k,row,col,string,buffer,length,row_num,last)	!Determine Controls and Terminal Size
 	CALL initialize(x,x00,i,j,row,col,endgame,frame,charge,updown,shots,hits,kills,score,wave)	!Initialize Positions and Variables
 		call printscreen(i,j,row,col,x,flip,rl,gcommand,left,right,shoot,frame,numcol,charge,updown,score,wave)
 
@@ -91,11 +93,11 @@ PROGRAM array_invaders
 			70 CALL printscreen(i,j,row,col,x,flip,rl,gcommand,left,right,shoot,frame,numcol&
 						,charge,updown,score,wave)					!Print Screen
 				IF (frame<3) THEN				!This is where the 3 frame animation comes from.
-					CALL game_timer(start,finish)		!Timer to allow a pause between frames.
+					CALL ctimer()		!Timer to allow a pause between frames.
 					frame=frame+1
 					GOTO 70	!printscreen again
 				ELSE
-					CALL game_timer(start,finish)		!Timer
+					CALL ctimer()		!Timer
 					frame=1; !reset frame count
 					GOTO 10	 !Loop back to Movement/Collisions
 				END IF	
@@ -136,42 +138,19 @@ END PROGRAM array_invaders
 
 
 !--------Controls--------Controls--------Controls-------Controls--------Controls--------Controls-------Controls-------
-SUBROUTINE controls(shoot,right,left,yesno,i,j,row,col)	!This is the very first subroutine called. It allows the user to
-	IMPLICIT NONE					!appropriately resize their terminal and then set ther controls.
-	CHARACTER(1) :: shoot, right, left		!If the terminal is too tall (width is irrelevant) then the player
-	INTEGER :: yesno, i, j				!can "see into the past" (see the previous frame).
-	INTEGER, intent(in) :: row, col
+SUBROUTINE controls(shoot,right,left,yesno,i,j,k,row,col,string,buffer,length,row_num,last)
+	IMPLICIT NONE					!This is the very first subroutine called. It allows the user to
+	CHARACTER(1) :: shoot, right, left		!appropriately resize their terminal and then set ther controls.
+	INTEGER :: yesno, i, j, k, buffer, last		!If the terminal is too tall (width is irrelevant) then the player
+	INTEGER, intent(in) :: row, col			!can "see into the past" (see the previous frame).
+	CHARACTER(3*col), DIMENSION(10) :: string
+	INTEGER, DIMENSION(10) :: length, row_num
 							
 call execute_command_line('clear')	!Clear screen before printing
-!All of these dumb "&" signs are the only way to get past the compiler, it thinks the lines are to long otherwise
-		WRITE(*,9000) '┌─────────────────────────────&
-		&──────────────────┐'
-		WRITE(*,9000) '│       ✭✭✭ Welcome to Space A&
-		&ttack! ✭✭✭        │'
-		WRITE(*,9000) '│                             &
-		&                  │'
-		WRITE(*,9000) '│         ♅ ♅ ♅   ♃  ♄  ☫  &
-		&♇  ☿  ♅ ♅ ♅          │'
-		WRITE(*,9000) '│                             &
-		&                  │'
-		WRITE(*,9000) '│  Please adjust the height of&
-		& your terminal to │'
-		WRITE(*,9000) '│              fit the border &
-		&now.              │'
-		WRITE(*,9000) '│                             &
-		&                  │'
-		WRITE(*,9000) '│          Press any key to co&
-		&ntinue            │'
-		DO i=1, row-5		!Fills in empty rows
-			WRITE(*,9000,advance='no') '│ '
-			DO j=1,col	!Fills in empty columns
-				call space()
-			END DO
-			WRITE(*,9000) ' │'
-		END DO
-		WRITE(*,9000) '└─────────────────────────────&
-		&──────────────────┘'
-		READ(*,*) 
+call menu_main(string,length,row_num,last,col)
+call print_menu(i,j,k,row,col,string,buffer,length,row_num,last)
+READ(*,*) 
+
 20 WRITE(*,*) 'Please enter your commands. W,D,A are recommended.'
 WRITE(*,*) 'Also note that in-game you must hit enter after each command.'
 WRITE(*,*) ''
@@ -620,16 +599,3 @@ READ(*,*) yesno
 
 RETURN
 END SUBROUTINE write_win_sequence
-
-!-------Game Timer-------Game Timer-------Game Timer-------Game Timer-------Game Timer-------Game Timer-------
-SUBROUTINE game_timer(start,finish)	!This subroutine pauses the main program between animation frames and controls
-	IMPLICIT NONE			!the speed of the game.
-	REAL :: start, finish
-
-!call sleep(1) -- this works in parallel, but only for integer values [no overhead vs 25% == HUGE]
-	call cpu_time(start)
-	50 call cpu_time(finish)
-	IF ((finish-start)<0.05) GOTO 50
-
-RETURN
-END SUBROUTINE game_timer
