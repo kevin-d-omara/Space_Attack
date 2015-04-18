@@ -37,20 +37,27 @@ Although Space Attack is playable it is still a work in progress. I have grand p
 *Screen shots were taken using the Cool-Retro-Term terminal, found at: https://github.com/Swordfish90/cool-retro-term
 
 ##Compile
-Space Attack utilizes OpenMP to handle parallel tasks and therefore requires a couple of extra steps to compile.
-To compile, type the following after the command prompt (">"):
-  >export OMP_NUM_THREADS=16
-  
-  >gfortran -fopenmp -c Space_Attack_v1_8.f90
-  
-  >gfortran -c sys_keyin.c
-  
-  >gfortran -c graphics_sub.f90
+Space Attack utilizes OpenMP to handle parallel tasks and is spread across multiple files.  It therefore requires a couple of extra steps to compile.
 
-  >gfortran -c primaries_sub.f90
+The easiest way to compile the game is to use "make".  Change to the directory containing the game files and type the following after the command prompt:
+
+    make
   
-  >gfortran -fopenmp sys_keyin.o graphics_sub.o primaries_sub.o Space_Attack_v1_6.o
+    export OMP_NUM_THREADS=16
+  
+  Viola!  Now type "./Space_Attack.out" and enjoy =)
+  
+  
+To compile manually instead, type the following after the command prompt:
+  
+    gfortran -fopenmp -c Space_Attack_v1_8.f90 primaries_sub.f90 graphics_sub.f90 sys_keyin.c
+  
+    gfortran -fopenmp sys_keyin.o graphics_sub.o primaries_sub.o Space_Attack_v1_6.o
+  
+    export OMP_NUM_THREADS=16
 
-Viola!  Type "./a.out" and enjoy =)
+Now type "./a.out" and enjoy!
 
-*Note: The first step must be done every time you open a new terminal, otherwise the program will not run properly.
+*Note: you may copy and paste the above commands into your terminal instead of typing them manually.
+
+*Note: Each time you open a new terminal you must type "export OMP_NUM_THREADS=16" before running the game. 
