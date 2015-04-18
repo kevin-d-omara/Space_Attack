@@ -46,8 +46,10 @@ To compile, type the following after the command prompt (">"):
   >gfortran -c sys_keyin.c
   
   >gfortran -c graphics_sub.f90
+
+  >gfortran -c primaries_sub.f90
   
-  >gfortran -fopenmp sys_keyin.o graphics_sub.o Space_Attack_v1_6.o
+  >gfortran -fopenmp sys_keyin.o graphics_sub.o primaries_sub.o Space_Attack_v1_6.o
 
 Viola!  Type "./a.out" and enjoy =)
 

@@ -10,7 +10,8 @@ PROGRAM array_invaders
 !	>gfortran -fopenmp -c Space_Attack_v1_8.f90
 !	>gfortran -c sys_keyin.c
 !	>gfortran -c graphics_sub.f90
-!	>gfortran -fopenmp sys_keyin.o graphics_sub.o Space_Attack_v1_6.o
+!	>gfortran -c primaries_sub.f90
+!	>gfortran -fopenmp sys_keyin.o graphics_sub.o primaries_sub.o Space_Attack_v1_6.o
 !	>./a.out	=) enjoy!
 !
 ! History:
