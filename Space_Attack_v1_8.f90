@@ -5,7 +5,12 @@ PROGRAM array_invaders
 !    This began as an attempt to recreate the classic game Space Invaders, made by Tomohiro Nishikado and released in 1978.
 !	Instead this has organically grown into a different game, and is still evolving as such.
 !
-! To Compile:
+! To Compile with make:
+!	>make
+!	>export OMP_NUM_THREADS=16
+!	>./Space_Attack.out
+!
+! To Compile manually:
 !	>export OMP_NUM_THREADS=16	(Must do this step every time you open a new terminal!)
 !	>gfortran -fopenmp -c Space_Attack_v1_8.f90
 !	>gfortran -c sys_keyin.c
