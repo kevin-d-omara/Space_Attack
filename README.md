@@ -45,14 +45,14 @@ The easiest way to compile the game is to use "make".  Change to the directory c
   
     export OMP_NUM_THREADS=16
   
-  Viola!  Now type "./Space_Attack.out" and enjoy =)
+  Viola!  Now type "./Space_Attack" and enjoy =)
   
   
 To compile manually instead, type the following after the command prompt:
   
-    gfortran -fopenmp -c Space_Attack_v1_8.f90 primaries_sub.f90 graphics_sub.f90 sys_keyin.c
+    gfortran -fopenmp -c Space_Attack_v1_8.f90 primaries_sub.f90 graphics_sub.f90 lose_animation.f90 sys_keyin.c
   
-    gfortran -fopenmp sys_keyin.o graphics_sub.o primaries_sub.o Space_Attack_v1_6.o
+    gfortran -fopenmp sys_keyin.o graphics_sub.o primaries_sub.o lose_animation.o Space_Attack_v1_6.o
   
     export OMP_NUM_THREADS=16
 
