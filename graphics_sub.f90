@@ -317,11 +317,11 @@ SUBROUTINE elaser_move(frame)
 
 	g_elaser_move: SELECT CASE(frame)
 		CASE(1)
-			WRITE(*,9001, advance='no') ' ❈ '	!frame=1
+			WRITE(*,9001, advance='no') ' ✣ '	!frame=1
 		CASE(2)	
-			WRITE(*,9001, advance='no') ' ❉ '	!frame=2
+			WRITE(*,9001, advance='no') ' ✥ '	!frame=2
 		CASE DEFAULT
-			WRITE(*,9001, advance='no') ' ❊ '	!frame=3
+			WRITE(*,9001, advance='no') ' ✤ '	!frame=3
 		END SELECT g_elaser_move
 	9001 FORMAT(A)
 
@@ -763,3 +763,20 @@ SUBROUTINE menu_main(string,length,row_num,last,col)
 
 RETURN
 END SUBROUTINE menu_main
+
+!-------LIFE LOSS------LIFE LOSS-------LIFE LOSS-------LIFE LOSS-------
+SUBROUTINE life_loss(frame)				!	#+999
+	INTEGER :: frame
+
+	g_life_loss: SELECT CASE(frame)
+		CASE(1)
+			WRITE(*,9001, advance='no') '  ✖'	!frame=1
+		CASE(2)	
+			WRITE(*,9001, advance='no') '  ✘'	!frame=2
+		CASE DEFAULT
+			WRITE(*,9001, advance='no') '  ✗'	!frame=3
+		END SELECT g_life_loss
+	9001 FORMAT(A)
+
+RETURN
+END SUBROUTINE life_loss

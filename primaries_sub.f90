@@ -12,7 +12,7 @@
 !	3) death_animation		!determines invader type->flags death & adds score
 !	4) powerup_death_animation	!determines powerup type->flags death & triggers bonus
 !
-!	TYPE			ANIMATION INDEX		FLAG TIMING
+!	TYPE			ANIMATION INDEX		FLAG TIMING (before or after fill_animation)
 !	Invader			+10,+20,+30,...		
 !	Killed Invader		-10,-20,-30,...		pre
 !	Powerup			+200,+210,+220,...	
@@ -21,14 +21,17 @@
 !	Enemy Laser		+1,+2,+3,...		
 !	Explosion		601,602,603		pre
 !	Combination Flag	666			pre
-!	Player			-777			
+!	Player			-777	
+!	Life Loss Animation	+999
+!	Loser Animation		+1000, +1001,...		
 
 !-------Move Invader-------Move Invader-------Move Invader-------Move Invader-------Move Invader-------
-SUBROUTINE move_invader(x00,x,row,col)
+SUBROUTINE move_invader(x00,x,elaser,row,col)
 	IMPLICIT NONE
-	INTEGER :: x00, i, j
+	REAL :: u
+	INTEGER :: x00, i, j, enemy_index
 	INTEGER, intent(in) :: row, col
-	INTEGER, DIMENSION (row,col) :: x, y		!x==invader; y==temporary loading matrix
+	INTEGER, DIMENSION (row,col) :: x, y, elaser	!x==invader; y==temporary loading matrix
 
 y=0	!clear temporary matrix before populating
 
@@ -58,9 +61,22 @@ END DO
 
 x=0	!clear invader matrix before updating with new locations
 
-DO i=1,row,2
+DO i=1,row,2		!update new locations
 	DO j=1,col
 		x(i,j)=y(i,j)
+	END DO
+END DO
+
+DO i=1,row,2		!enemy SPECIAL ABILITIES
+	DO j=1,col
+		IF ((x(i,j)/=0).AND.(x(i,j)/=11)) THEN		!If non-invader enemy
+			enemy_index=x(i,j)-MOD(x(i,j),10)	!determine enemy type
+			enemy_abilities: SELECT CASE (enemy_index)
+				CASE(20)	!skirmisher	#21
+					CALL random_number(u)
+					IF(u<0.125) elaser(i+1,j)=1	!fire laser every 1/8 turns
+				END SELECT enemy_abilities
+		END IF
 	END DO
 END DO
 
@@ -324,7 +340,7 @@ DO l=2,row-1,2		!scale even rows (elaser)
 		i=row+1-l	!reverse row order (bottom to top)
 		IF (elaser(i,j)/=0) THEN	!IF ELASER
 			IF (i==row-1) THEN	!bottom row				!PLAYER
-				IF (invader(row,j)==4) lives=lives-elaser(i,j)	!damage player
+				IF (invader(row,j)==-777) lives=lives-elaser(i,j)	!damage player
 				elaser(i,j)=0				!clear old elaser space
 			ELSE			!other rows
 				IF (powerup(i+1,j)/=0) THEN				!POWERUP

@@ -16,7 +16,8 @@ PROGRAM array_invaders
 !	>gfortran -c sys_keyin.c
 !	>gfortran -c graphics_sub.f90
 !	>gfortran -c primaries_sub.f90
-!	>gfortran -fopenmp sys_keyin.o graphics_sub.o primaries_sub.o Space_Attack_v1_6.o
+!	>gfortran -c lose_animation.f90
+!	>gfortran -fopenmp sys_keyin.o graphics_sub.o primaries_sub.o lose_animation.o Space_Attack_v1_6.o
 !	>./a.out	=) enjoy!
 !
 ! History:
@@ -33,11 +34,12 @@ PROGRAM array_invaders
 !	1.6.1	K. O'Mara	04/05/15	added new comments to make more presentable
 !	1.7	K. O'Mara	04/16/15	replaced game_timer with a c function (nanosleep) and made menu screen modular
 !	1.7.1	K. O'Mara	04/17/15	removed most GOTO's and unnecessary variables (i.e. i,j,k import into subroutine)
-!	1.8	K. O'Mara	04/18/15	HUGE OVERHAUL:
+!	1.8	K. O'Mara	04/17/15	HUGE OVERHAUL:
 !							-massive update to graphics library
 !							-new subroutine file: primaries_sub.f90
 !							-added support for powerups, new enemy types, and new weapon types
-!	1.8.1	K. O'Mara	04/19/15	Fixed many bugs, now the huge overhaul is successful
+!	1.8.1	K. O'Mara	04/18/15	Fixed many bugs, now the huge overhaul is successful
+!	1.8.2	K. O'Mara	04/18/15	Added lose sequence animation (big explosion across screen) and added in the skirmisher
 !
 !
 ! GOTO Statements:
@@ -64,8 +66,8 @@ PROGRAM array_invaders
 
 	IMPLICIT NONE
 	INTEGER, PARAMETER :: row=19, col=15	!#rows must be = 4N+3 for code to work // (X-3)/4=N
-	INTEGER :: endgame, x00, i, j, k, h, yesno, frame, charge, updown, shots, kills, hits
-	INTEGER ::  score, wincon, wave, buffer, last, length(10), row_num(10), lives, eplaser
+	INTEGER :: endgame, x00, i, j, k, h, yesno, frame, charge, updown, shots, kills, hits, dframe
+	INTEGER ::  score, wincon, wave, buffer, last, length(10), row_num(10), lives, eplaser, flop
 	INTEGER, DIMENSION (row,col) :: animation, invader, laser, elaser, powerup
 	REAL :: start, finish
 	CHARACTER(1) ::	command, shoot, right, left, gcommand	!C(LEN=1) == C(1) == C
@@ -76,8 +78,9 @@ PROGRAM array_invaders
 !------------------------------------------------------------------------------------------!
 
 	777 CALL controls(shoot,right,left,yesno,row,col,string,buffer,length,row_num,last)	!Determine Controls and Terminal Size
-	CALL initialize(invader,elaser,laser,powerup,animation,x00,row,col,endgame,frame,charge,updown,shots,hits,kills,score,wave,lives)
-		call printscreen(row,col,animation,invader,gcommand,left,right,shoot,frame,charge,updown,score,wave,lives)
+	CALL initialize(invader,elaser,laser,powerup,animation,x00,row,col,endgame,frame,charge,updown,shots,&
+									hits,kills,score,wave,lives,dframe)
+		call printscreen(row,col,animation,invader,gcommand,left,right,shoot,frame,charge,updown,score,wave,lives,dframe,endgame)
 
 !This parallel region has two main sections.  The first is the bulk of the game and takes care of all the action.  The second allows the
 !  player to enter commands at will.  This is entirely necessary as Fortran pauses computation at a READ statement until the user hits enter.
@@ -89,22 +92,29 @@ PROGRAM array_invaders
 	!$OMP SECTION
 	   DO WHILE (endgame==1)	!MAIN GAME LOOP
 		animation=0	!clear animation matrix
-		CALL move_invader(x00,invader,row,col)								!MOVE invader
+		CALL move_invader(x00,invader,elaser,row,col)							!MOVE invader
 		CALL move_powerup(powerup,row,col)								!MOVE powerup
 		CALL move_laser(laser,invader,powerup,animation,row,col,eplaser,kills,hits,score)!MOVE lasers -> collisions w/ inv & p_up
 		CALL move_enemy_laser(elaser,invader,powerup,animation,row,col,lives,eplaser,kills,hits,score)	!MOVE enemy lasers
 		CALL commands(command,shoot,left,right,row,col,invader,laser,gcommand,charge,updown,shots)	!Player's Command
 		CALL fill_animation(animation,invader,laser,elaser,powerup,row,col)				!Finalize animation matrix
 		DO WHILE (frame<4)		!3 Frame Animation.
-			CALL printscreen(row,col,animation,invader,gcommand,left,right,shoot,frame,charge,updown,score,wave,lives)!PrintScreen
+			CALL printscreen(row,col,animation,invader,gcommand,left,right,shoot,frame,charge,&
+										updown,score,wave,lives,dframe,endgame)
 			CALL ctimer()		!Timer to allow a pause between frames.
 			frame=frame+1
 		END DO
-			frame=1; !reset frame count
-		CALL win_condition(row,col,lives,invader,endgame)
-		IF (endgame==0) THEN
-			frame=3		!to show proper lives
-			CALL printscreen(row,col,animation,invader,gcommand,left,right,shoot,frame,charge,updown,score,wave,lives)
+		frame=1; !reset frame count
+		CALL win_condition(row,col,lives,invader,endgame)	!Check for win/lose
+		IF (endgame==0) THEN					!Begin Lose Animation
+			frame=3		!to freeze final positions
+			flop=0; h=0	!set first wave explosions
+			DO k=1,70	!loser_animation frame count
+				CALL loser_animation(row,col,animation,dframe,h,flop,invader)
+				CALL printscreen(row,col,animation,invader,gcommand,left,right,shoot,frame,charge,updown,&
+												score,wave,lives,dframe,endgame)
+				CALL ctimer()	!Timer to allow a pause between frames
+			END DO
 		END IF
 	   END DO			!END MAIN GAME LOOP
 	IF (endgame==0) THEN
@@ -188,9 +198,9 @@ END SUBROUTINE controls
 
 !--------Initialize positions--------Initialize Positions--------Initialize positions--------Initialize Positions--------
 SUBROUTINE initialize(invader,elaser,laser,powerup,animation,x00,row,col,endgame,frame,charge,updown,&
-									shots,hits,kills,score,wave,lives)
+								shots,hits,kills,score,wave,lives,dframe)
 	IMPLICIT NONE
-	INTEGER :: x00, row, col, endgame, frame, charge, updown, shots, hits, kills, score, wave, lives, i, j
+	INTEGER :: x00, row, col, endgame, frame, charge, updown, shots, hits, kills, score, wave, lives, i, j, dframe
 	INTEGER, DIMENSION (row,col) :: invader, elaser, laser, powerup, animation
 									!This subroutine initializes all relevant variables
 endgame=1	!1 = game on!
@@ -198,6 +208,7 @@ invader=0; elaser=0; laser=0; powerup=0; animation=0	!empty matrices
 x00=0		!empty spawn
 invader(row,8)=-777!spawn you :)
 frame=1		!set first frame count for graphics
+dframe=0	!set death frame to inactive
  charge=3	!set at max weapon charge
 shots=0		!set to 0 shots fired
 hits=0		!set to 0 hits
@@ -206,12 +217,15 @@ updown=0	!set to idle charge animation
 score=0		!set score to 0 points
 wave=1		!set to wave 1
 lives=1		!set lives to 1
+CALL init_random_seed()	!randomly pick a new random number seed
 
-DO i=3,7,2			!Spawns the Wave 1 Invaders!
+DO i=5,7,2			!Spawns the Wave 1 Invaders!
 	DO j=5,11
 		invader(i,j)=11
 	END DO
 END DO
+
+invader(3,6)=21; invader(3,8)=21; invader(3,10)=21
 
 	!Print initial position
 CALL execute_command_line('clear')	!Clear screen before printing
@@ -327,9 +341,10 @@ RETURN
 END SUBROUTINE fill_animation
 
 !-------Print Screen-------Print Screen-------Print Screen-------Print Screen-------Print Screen-------Print Screen-------
-SUBROUTINE printscreen(row,col,animation,invader,gcommand,left,right,shoot,frame,charge,updown,score,wave,lives)
+SUBROUTINE printscreen(row,col,animation,invader,gcommand,left,right,shoot,frame,charge,updown,score,wave,lives,dframe,endgame)
 	IMPLICIT NONE				!This subroutine handles the beautiful graphics
-	INTEGER :: i, j, row, col, flip, rl, frame, charge, updown, score, wave, lives, anim_index
+	INTEGER :: i, j, flip, rl, frame, charge, updown, score, wave, lives, anim_index, dframe, endgame
+	INTEGER, intent(in) :: row, col
 	INTEGER, DIMENSION (row,col) :: animation, invader	!x==animation; y==invader
 	CHARACTER(1) ::	gcommand, right, left, shoot
 
@@ -378,6 +393,12 @@ DO i=1,(row-1)		!scale rows (-player row)
 						call explosion_2(frame)
 					CASE(603)
 						call explosion_3(frame)
+					CASE(1000)
+						call ending_1000(dframe)	!begin lose animation
+					CASE(1001)
+						call ending_A(dframe,animation,i,j,row,col)
+					CASE(1002)
+						call ending_B(dframe,animation,i,j,row,col)
 				END SELECT odd_move
 
 		ELSE			!LASER/ELASER/POWERUP ROW
@@ -414,6 +435,11 @@ DO i=1,(row-1)		!scale rows (-player row)
 						call explosion_3(frame)
 					CASE(666)
 						call combination(frame,rl)	!combination
+					CASE(1001)
+						call ending_A(dframe,animation,i,j,row,col)	!begin lose animation
+					CASE(1002)
+						call ending_B(dframe,animation,i,j,row,col)
+
 				END SELECT even_move
 		END IF
 		IF (j==col) WRITE(*,9000) ' │'	!Right border
@@ -432,49 +458,45 @@ END DO		!End row
 
 !Player movement
 DO j=1,col	!scale columns
+   IF (endgame==1) THEN
 	IF (gcommand==right) THEN	!MOVE RIGHT ANIMATION
 		IF (j==1) WRITE(*,9000,advance='no') '│'	!Left border
-		IF(invader(row,j)==0) THEN	!Open space 
+		IF( invader(row,j)==0) THEN	!Open space 
 			call space()
 		ELSE
-			IF(gcommand==left) THEN		!Move left
-				call player_l(frame)
-			ELSE IF(gcommand==right) THEN	!Move right
-				call player_r(frame)
-			ELSE				!No move
-				call player(frame)
-			END IF
+			call player_r(frame)	!Move Right
 		END IF
 		IF (j==col) WRITE(*,9000) ' │'	!Right border
+
 	ELSE IF (gcommand==left) THEN	!MOVE LEFT ANIMATION
-			IF (j==1) WRITE(*,9000,advance='no') '│ '	!Left border
-		IF(invader(row,j)==0) THEN	!Open space 
+		IF (j==1) WRITE(*,9000,advance='no') '│ '	!Left border
+		IF (invader(row,j)==0) THEN	!Open space 
 			call space()
 		ELSE
-			IF(gcommand==left) THEN		!Move left
-				call player_l(frame)
-			ELSE IF(gcommand==right) THEN	!Move right
-				call player_r(frame)
-			ELSE				!No move
-				call player(frame)
-			END IF
+			call player_l(frame)	!Move Right
 		END IF
 		IF (j==col) WRITE(*,9000) '│'	!Right border
+
 	ELSE			!SHOOT/IDLE ANIMATION
 		IF (j==1) WRITE(*,9000,advance='no') '│ '	!Left border
-		IF(invader(row,j)==0) THEN	!Open space 
+		IF (invader(row,j)==0) THEN	!Open space 
 			call space()
 		ELSE
-			IF(gcommand==left) THEN		!Move left
-				call player_l(frame)
-			ELSE IF(gcommand==right) THEN	!Move right
-				call player_r(frame)
-			ELSE				!No move
-				call player(frame)
-			END IF
+				call player(frame)!No Move
 		END IF
 		IF (j==col) WRITE(*,9000) ' │'	!Right border
 	END IF
+   ELSE IF (endgame==0) THEN		!LOSE ANIMATION
+	IF (j==1) WRITE(*,9000,advance='no') '│ '	!Left border
+	IF (animation(row,j)==1000) THEN
+		call ending_1000(dframe)
+	ELSE IF (invader(row,j)==-777) THEN
+		call player(frame)
+	ELSE
+		call space()
+	END IF
+	IF (j==col) WRITE(*,9000) ' │'	!Right border
+   END IF
 END DO
 
 WRITE(*,9000,advance='no') '└'	!Prints Bottom Border
@@ -513,6 +535,24 @@ CALL SYS_KEYSET(0)
 
 RETURN
 END SUBROUTINE enter_command
+
+!-------INITIALIZE RANDOM SEED-------INITIALIZE RANDOM SEED-------INITIALIZE RANDOM SEED-------
+!SOURCE: stackoverflow -> http://stackoverflow.com/questions/18754438/generating-random-numbers-in-a-fortran-module
+SUBROUTINE init_random_seed()
+      INTEGER :: i, n, clock
+      INTEGER, DIMENSION(:), ALLOCATABLE :: seed
+
+      CALL RANDOM_SEED(size = n)
+      ALLOCATE(seed(n))
+
+      CALL SYSTEM_CLOCK(COUNT=clock)
+
+      seed = clock + 37 * (/ (i - 1, i = 1, n) /)
+      CALL RANDOM_SEED(PUT = seed)
+
+      DEALLOCATE(seed)
+RETURN
+END
 
 !-------Write Lose Sequence-------Write Lose Sequence-------Write Lose Sequence-------Write Lose Sequence-------
 SUBROUTINE write_lose_sequence(yesno,kills,shots,hits,score)
@@ -572,9 +612,9 @@ SUBROUTINE win_condition(row,col,lives,invader,endgame)
 !Check for loss condition
 IF (invader((row-2),col)/=0) THEN	!Check final Invader position (bottom right)
 	lives=lives-1
-	invader((row-2),col)=0
-	IF (lives==0) endgame=0
+	IF (lives/=0) invader((row-2),col)=0
 END IF
+IF (lives==0) endgame=0
 
 IF (endgame/=0) THEN	!Check for win condition
 	IF (MAXVAL(invader)==0) THEN	!check if maximum value of gamespace == 0 (i.e. no Invaders left)
@@ -584,3 +624,44 @@ END IF
 
 RETURN
 END SUBROUTINE win_condition
+
+!-------LOSER ANIMATION-------LOSER ANIMATION-------LOSER ANIMATION-------LOSER ANIMATION-------
+SUBROUTINE loser_animation(row,col,animation,dframe,h,flop,invader)
+	IMPLICIT NONE
+	INTEGER :: dframe, i, j, h, flop
+	INTEGER, intent(in) :: row, col
+	INTEGER, DIMENSION(row,col) :: animation, invader
+
+dframe=dframe+1
+IF (dframe==1) THEN
+	IF (invader((row-2),col)/=0) THEN	!Check final Invader position (bottom right)
+		animation(row-2,col)=1000
+	ELSE
+		DO j=1,col
+			IF (invader(row,j)==-777) THEN
+				animation(row,j)=1000
+				invader(row,j)=0
+			END IF
+		END DO
+	END IF
+END IF
+
+IF ((MOD(dframe-10,6)==0).AND.(dframe/=10)) THEN		!every 6 frames past the 10th
+	IF (flop==1) h=h+1		!h determines which wave of explosions (1->4)	
+	DO i=(4-h)*row/4+flop,row,2		!carve out 1/4 of map, starting bottom right
+		DO j=(4-h)*col/4+flop,col,2				!(5-h)*row/4+flop
+			IF ((i<(5-h)*row/4).OR.(j<(5-h)*col/4)) THEN	!carve out L shape in map
+				IF ((MOD(dframe-4,12)==0).AND.(dframe/=4))animation(i,j)=1001		!flags animation set A
+				IF ((MOD(dframe-10,12)==0).AND.(dframe/=10)) animation(i,j)=1002	!flags animation set B
+			END IF
+		END DO
+	END DO
+	IF (flop/=0) THEN		!flop==0==first half explosions
+		flop=0			!alternate flop
+	ELSE
+		flop=1
+	END IF
+END IF
+
+RETURN
+END SUBROUTINE loser_animation
