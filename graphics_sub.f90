@@ -379,159 +379,55 @@ SUBROUTINE missile_move(frame)
 RETURN
 END SUBROUTINE missile_move
 
-!-------LIVE_UP_MOVE-------LIVE_UP_MOVE-------LIVE_UP_MOVE-------LIVE_UP_MOVE-------
-SUBROUTINE live_up_move(frame,rl)
+!-------POWERUP MOVE-------POWERUP MOVE-------POWERUP MOVE-------POWERUP MOVE-------
+SUBROUTINE powerup_move(frame,rl)
 	INTEGER :: frame, rl
 
-IF (rl==1) THEN		!rl==1 -> moving right
-	g_live_up_move_r: SELECT CASE(frame)
-		CASE(1)
-			WRITE(*,9001, advance='no') '♥  '	!frame=1
-		CASE(2)	
-			WRITE(*,9001, advance='no') ' ♥ '	!frame=2
-		CASE DEFAULT
-			WRITE(*,9001, advance='no') '  ♡'	!frame=3
-		END SELECT g_live_up_move_r
-	9001 FORMAT(A)
-
-ELSE			!rl==0 -> moving left
-	g_live_up_move_l: SELECT CASE(frame)
-		CASE(1)
-			WRITE(*,9001, advance='no') '  ♥'
-		CASE(2)
-			WRITE(*,9001, advance='no') ' ♥ '
-		CASE DEFAULT
-			WRITE(*,9001, advance='no') '♡  '
-		END SELECT g_live_up_move_l
-END IF
-RETURN
-END SUBROUTINE live_up_move
-
-!-------SCORE UP MOVE-------SCORE UP MOVE-------SCORE UP MOVE-------SCORE UP MOVE-------
-SUBROUTINE score_up_move(frame,rl)
-	INTEGER :: frame, rl
-
-IF (rl==1) THEN		!rl==1 -> moving right
-	g_score_up_move_r: SELECT CASE(frame)
-		CASE(1)
-			WRITE(*,9001, advance='no') '○  '	!frame=1
-		CASE(2)	
-			WRITE(*,9001, advance='no') ' ◎ '	!frame=2
-		CASE DEFAULT
-			WRITE(*,9001, advance='no') '  ●'	!frame=3
-		END SELECT g_score_up_move_r
-	9001 FORMAT(A)
-
-ELSE			!rl==0 -> moving left
-	g_score_up_move_l: SELECT CASE(frame)
-		CASE(1)
-			WRITE(*,9001, advance='no') '  ○'
-		CASE(2)
-			WRITE(*,9001, advance='no') ' ◎ '
-		CASE DEFAULT
-			WRITE(*,9001, advance='no') '●  '
-		END SELECT g_score_up_move_l
-END IF
-RETURN
-END SUBROUTINE score_up_move
-
-!-------AMMO UP MOVE-------AMMO UP MOVE-------AMMO UP MOVE-------AMMO UP MOVE-------
-SUBROUTINE ammo_up_move(frame,rl)
-	INTEGER :: frame, rl
-
-IF (rl==1) THEN		!rl==1 -> moving right
-	g_ammo_up_move_r: SELECT CASE(frame)
-		CASE(1)
-			WRITE(*,9001, advance='no') '✦  '	!frame=1
-		CASE(2)	
-			WRITE(*,9001, advance='no') ' ✧ '	!frame=2
-		CASE DEFAULT
-			WRITE(*,9001, advance='no') '  ✦'	!frame=3
-		END SELECT g_ammo_up_move_r
-	9001 FORMAT(A)
-
-ELSE			!rl==0 -> moving left
-	g_ammo_up_move_l: SELECT CASE(frame)
-		CASE(1)
-			WRITE(*,9001, advance='no') '  ✦'
-		CASE(2)
-			WRITE(*,9001, advance='no') ' ✧ '
-		CASE DEFAULT
-			WRITE(*,9001, advance='no') '✦  '
-		END SELECT g_ammo_up_move_l
-END IF
-RETURN
-END SUBROUTINE ammo_up_move
-
-!-------CHARGE UP MOVE-------CHARGE UP MOVE-------CHARGE UP MOVE-------CHARGE UP MOVE-------
-SUBROUTINE charge_up_move(frame,rl)
-	INTEGER :: frame, rl
-
-IF (rl==1) THEN		!rl==1 -> moving right
-	g_charge_up_move_r: SELECT CASE(frame)
-		CASE(1)
-			WRITE(*,9001, advance='no') 'ℂ  '	!frame=1
-		CASE(2)	
-			WRITE(*,9001, advance='no') ' ₡ '	!frame=2
-		CASE DEFAULT
-			WRITE(*,9001, advance='no') '  ₢'	!frame=3
-		END SELECT g_charge_up_move_r
-	9001 FORMAT(A)
-
-ELSE			!rl==0 -> moving left
-	g_charge_up_move_l: SELECT CASE(frame)
-		CASE(1)
-			WRITE(*,9001, advance='no') '  ℂ'
-		CASE(2)
-			WRITE(*,9001, advance='no') ' ₡ '
-		CASE DEFAULT
-			WRITE(*,9001, advance='no') '₢  '
-		END SELECT g_charge_up_move_l
-END IF
-RETURN
-END SUBROUTINE charge_up_move
-
-!-------WEAPON UP MOVE-------WEAPON UP MOVE-------WEAPON UP MOVE-------WEAPON UP MOVE-------
-SUBROUTINE weapon_up_move(frame,rl)
-	INTEGER :: frame, rl
-
-IF (rl==1) THEN		!rl==1 -> moving right
-	g_weapon_up_move_r: SELECT CASE(frame)
+IF (rl==0) THEN		!rl==1 -> moving right
+	g_powerup_move_r: SELECT CASE(frame)
 		CASE(1)
 			WRITE(*,9001, advance='no') '◆  '	!frame=1
 		CASE(2)	
 			WRITE(*,9001, advance='no') ' ◈ '	!frame=2
 		CASE DEFAULT
 			WRITE(*,9001, advance='no') '  ◇'	!frame=3
-		END SELECT g_weapon_up_move_r
+		END SELECT g_powerup_move_r
 	9001 FORMAT(A)
 
 ELSE			!rl==0 -> moving left
-	g_weapon_up_move_l: SELECT CASE(frame)
+	g_powerup_move_l: SELECT CASE(frame)
 		CASE(1)
 			WRITE(*,9001, advance='no') '  ◆'
 		CASE(2)
 			WRITE(*,9001, advance='no') ' ◈ '
 		CASE DEFAULT
 			WRITE(*,9001, advance='no') '◇  '
-		END SELECT g_weapon_up_move_l
+		END SELECT g_powerup_move_l
 END IF
 RETURN
-END SUBROUTINE weapon_up_move
+END SUBROUTINE powerup_move
 
 !-------POWERUP DESTROYED------POWERUP DESTROYED-------POWERUP DESTROYED-------POWERUP DESTROYED-------
-SUBROUTINE powerup_destroyed(frame)
-	INTEGER :: frame
+SUBROUTINE powerup_destroyed(row,col,animation,i,j)
+	INTEGER :: i, j
+	INTEGER, intent(in) :: row, col
+	INTEGER, DIMENSION(row,col) :: animation
 
-	g_powerup_destroyed: SELECT CASE(frame)
-		CASE(1)
-			WRITE(*,9001, advance='no') '☾☽ '	!frame=1
-		CASE(2)	
-			WRITE(*,9001, advance='no') '☾☆☽'	!frame=2
-		CASE DEFAULT
-			WRITE(*,9001, advance='no') '☾★☽'	!frame=3
-		END SELECT g_powerup_destroyed
-	9001 FORMAT(A)
+g_powerup_destroyed: SELECT CASE(animation(i,j))
+	CASE(-210)
+		WRITE(*,9001, advance='no') '☾♥☽'
+	CASE(-220)
+		WRITE(*,9001, advance='no') '☾✪☽'
+	CASE(-230)
+		WRITE(*,9001, advance='no') '☾☢☽'
+	CASE(-240)
+		WRITE(*,9001, advance='no') '☾♨☽'
+	CASE(-250)
+		WRITE(*,9001, advance='no') '☾☪☽'
+	CASE DEFAULT
+		WRITE(*,9001, advance='no') '☾✖☽'	!✘✗
+	END SELECT g_powerup_destroyed
+9001 FORMAT(A)
 
 RETURN
 END SUBROUTINE powerup_destroyed
