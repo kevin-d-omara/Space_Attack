@@ -724,7 +724,7 @@ menu_selector: SELECT CASE(wmenu)
 		row_num(10)=15
 
 		WRITE(Lnum_miss,10) num_miss
-		string(11)='☢  Missile [2 Points]: ' // Lnum_miss
+		string(11)='☢  Missile [3 Points]: ' // Lnum_miss
 		length(11)=24
 		row_num(11)=16
 
