@@ -791,9 +791,9 @@ wave_number: SELECT CASE(wave)
 		END DO
 	CASE(6)					!Warp Time
 		DO i=1,5,2
-			DO j=1,col,5
+			DO j=4,col-3
 				CALL random_number(u)
-				IF (u>1.667) THEN
+				IF (u>0.901) THEN
 					invader(i,j)=11
 				ELSE
 					invader(i,j)=61
