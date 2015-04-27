@@ -50,7 +50,7 @@ sys_keyin_(int *nextch)
 
 /* ctimer_()
   Fortran call: 
-      CALL ctimer()   to pause for 1/9th of a second
+      CALL ctimer()   to pause for 1/12th of a second
 
    Author: Found on StackOverflow - http://stackoverflow.com/questions/7684359/using-nanosleep-in-c
 
@@ -69,7 +69,7 @@ ctimer_()
 {
    struct timespec tim, tim2;
    tim.tv_sec = 0;		/* seconds */
-   tim.tv_nsec = 111111111L;	/* nanoseconds */
+   tim.tv_nsec = 95238095L;	/* nanoseconds */
 
   if(nanosleep(&tim , &tim2) < 0 )   
    {

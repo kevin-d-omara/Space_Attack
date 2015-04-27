@@ -294,6 +294,23 @@ SUBROUTINE explosion_3(frame)
 RETURN
 END SUBROUTINE explosion_3
 
+!------- WARP ------- WARP ------- WARP ------- WARP ------- WARP ------- WARP -------
+SUBROUTINE warp(frame)
+	INTEGER :: frame
+
+	g_warp: SELECT CASE(frame)
+		CASE(1)
+			WRITE(*,9001, advance='no') ' ₪ '	!frame=1
+		CASE(2)	
+			WRITE(*,9001, advance='no') ' 卐'	!frame=2
+		CASE DEFAULT
+			WRITE(*,9001, advance='no') ' ₪ '	!frame=3
+		END SELECT g_warp
+	9001 FORMAT(A)
+
+RETURN
+END SUBROUTINE warp
+
 !-------LASER MOVE------LASER MOVE-------LASER MOVE-------LASER MOVE-------
 SUBROUTINE laser_move(frame)
 	INTEGER :: frame
@@ -415,15 +432,15 @@ SUBROUTINE powerup_destroyed(row,col,animation,i,j)
 
 g_powerup_destroyed: SELECT CASE(animation(i,j))
 	CASE(-210)
-		WRITE(*,9001, advance='no') '☾♥☽'
+		WRITE(*,9001, advance='no') '☾♥☽'	!+1 Life
 	CASE(-220)
-		WRITE(*,9001, advance='no') '☾✪☽'
+		WRITE(*,9001, advance='no') '☾✪☽'	!2x Score
 	CASE(-230)
-		WRITE(*,9001, advance='no') '☾☢☽'
+		WRITE(*,9001, advance='no') '☾☢☽'	!+ Ammo
 	CASE(-240)
-		WRITE(*,9001, advance='no') '☾♨☽'
-	CASE(-250)
-		WRITE(*,9001, advance='no') '☾☪☽'
+		WRITE(*,9001, advance='no') '☾⋇☽'	!2x Damage
+!	CASE(-250)
+!		WRITE(*,9001, advance='no') '☾☪☽'	!Weapon Up
 	CASE DEFAULT
 		WRITE(*,9001, advance='no') '☾✖☽'	!✘✗
 	END SELECT g_powerup_destroyed
@@ -431,6 +448,51 @@ g_powerup_destroyed: SELECT CASE(animation(i,j))
 
 RETURN
 END SUBROUTINE powerup_destroyed
+
+!-------SHIELD MOVE-------SHIELD MOVE-------SHIELD MOVE-------SHIELD MOVE-------
+SUBROUTINE shield_move(frame,rl)
+	INTEGER :: frame, rl
+
+IF (rl==0) THEN		!rl==1 -> moving right
+	g_shield_move_r: SELECT CASE(frame)
+		CASE(1)
+			WRITE(*,9001, advance='no') '⁓  '	!frame=1∼ ∽ ∾ ∿ ⁓ ♒
+		CASE(2)	
+			WRITE(*,9001, advance='no') ' ♒ '	!frame=2
+		CASE DEFAULT
+			WRITE(*,9001, advance='no') '  ⁓'	!frame=3
+		END SELECT g_shield_move_r
+	9001 FORMAT(A)
+
+ELSE			!rl==0 -> moving left
+	g_shield_move_l: SELECT CASE(frame)
+		CASE(1)
+			WRITE(*,9001, advance='no') '  ⁓'
+		CASE(2)
+			WRITE(*,9001, advance='no') ' ♒ '
+		CASE DEFAULT
+			WRITE(*,9001, advance='no') '⁓  '
+		END SELECT g_shield_move_l
+END IF
+RETURN
+END SUBROUTINE shield_move
+
+!------- SHIELD DESTROYED ------- SHIELD DESTROYED ------- SHIELD DESTROYED ------- SHIELD DESTROYED ------- 
+SUBROUTINE shield_destroyed(frame)
+	INTEGER :: frame
+
+	g_shield_destroyed: SELECT CASE(frame)
+		CASE(1)
+			WRITE(*,9001, advance='no') ' ┅ '	!frame=1∾ ∿ ┈ ┉ ┅
+		CASE(2)	
+			WRITE(*,9001, advance='no') ' ┉ '	!frame=2
+		CASE DEFAULT
+			WRITE(*,9001, advance='no') ' ┈ '	!frame=3
+		END SELECT g_shield_destroyed
+	9001 FORMAT(A)
+
+RETURN
+END SUBROUTINE shield_destroyed
 
 !-------COMBINATION------COMBINATION-------COMBINATION-------COMBINATION-------
 SUBROUTINE combination(frame)
@@ -487,6 +549,35 @@ g_player_l: SELECT CASE(frame)
 9001 FORMAT(A)	!Format label
 RETURN
 END SUBROUTINE player_l
+
+!-------GMULTIPLIER-------GMULTIPLIER-------GMULTIPLIER-------
+SUBROUTINE gmultiplier(frame,tcounter,mcount,limit)
+	INTEGER :: frame, tcounter, mcount, limit
+
+IF (tcounter-mcount<2*limit/3) THEN		!first half of duration
+	g_multiplier_1: SELECT CASE(frame)
+		CASE(1)
+			WRITE(*,9001, advance='no') ' x2'	!frame=1
+		CASE(2)	
+			WRITE(*,9001, advance='no') ' x2'	!frame=2
+		CASE DEFAULT
+			WRITE(*,9001, advance='no') ' x2'	!frame=3
+		END SELECT g_multiplier_1
+	9001 FORMAT(A)
+
+ELSE					!last half of duration
+	g_multiplier_2: SELECT CASE(frame)
+		CASE(1)
+			WRITE(*,9001, advance='no') ' x2'
+		CASE(2)
+			WRITE(*,9001, advance='no') ' x2'
+		CASE DEFAULT
+			WRITE(*,9001, advance='no') '   '
+		END SELECT g_multiplier_2
+END IF
+
+RETURN
+END SUBROUTINE gmultiplier
 
 !-------OPEN SPACE-------OPEN SPACE-------OPEN SPACE-------
 SUBROUTINE space()
@@ -585,12 +676,19 @@ RETURN
 END SUBROUTINE wcharge_idle
 
 !-------PRINT MENU-------PRINT MENU-------PRINT MENU-------PRINT MENU-------
+! This menu simply takes the values loaded into "string", "length", "row_num", and "last"
+! and prints the appropriate screen output.  The results will always be centered and
+! surrouned by a boarder of dimensions "row+5" in height by "col*3" in length.  The "+5"
+! is determined by counting the extra rows needed to display LIVES/SCORE, WEAPON CHARGE,
+! and the Win/Lose statement during gameplay.  The "*3" is because each column value is
+! allotted 3 columns for printing.
 SUBROUTINE print_menu(row,col,string,buffer,length,row_num,last)
 IMPLICIT NONE
-INTEGER :: buffer, length(10), row_num(10), last, i, j , k
+INTEGER :: buffer, length(row), row_num(row), last, i, j , k
 INTEGER, intent(in) :: row, col
- CHARACTER (3*col), DIMENSION(10) :: string
+ CHARACTER (3*col), DIMENSION(row) :: string
 
+WRITE(*,*) ''								!CHECK!
 k=1		!initialize index (for row, length, and string)
 DO i=1,row+5
 	IF (i==1) THEN		!Top border
