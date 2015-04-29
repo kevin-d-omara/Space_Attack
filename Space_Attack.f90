@@ -775,12 +775,12 @@ wave_number: SELECT CASE(wave)
 	CASE(5)					!Escort
 		invader(3,3)=52; invader(3,13)=52
 		DO j=1,5
-			powerup(4,j)=290
+			powerup(4,j)=291
 		END DO
 		DO j=11,15
-			powerup(4,j)=290
+			powerup(4,j)=291
 		END DO
-		DO j=1,col
+		DO j=3,col-2
 			invader(1,j)=11
 		END DO
 		DO i=6,12,2
@@ -823,10 +823,10 @@ wave_number: SELECT CASE(wave)
 		invader(3,6)=42; invader(3,10)=42
 		invader(5,3)=52; invader(5,13)=52
 		DO j=1,5
-			powerup(6,j)=290
+			powerup(6,j)=291
 		END DO
 		DO j=11,15
-			powerup(6,j)=290
+			powerup(6,j)=291
 		END DO
 		DO j=1,col
 			invader(7,j)=11
