@@ -43,7 +43,7 @@ The easiest way to compile the game is to use "make".  Change to the directory c
 
     make
   
-    export OMP_NUM_THREADS=16
+    export OMP_NUM_THREADS=2
   
   Viola!  Now type "./Space_Attack" and enjoy =)
   
@@ -54,10 +54,10 @@ To compile manually instead, type the following after the command prompt:
   
     gfortran -fopenmp sys_keyin.o graphics_sub.o primaries_sub.o lose_animation.o menus.o Space_Attack.o
   
-    export OMP_NUM_THREADS=16
+    export OMP_NUM_THREADS=2
 
 Now type "./a.out" and enjoy!
 
 *Note: you may copy and paste the above commands into your terminal instead of typing them manually.
 
-*Note: Each time you open a new terminal you must type "export OMP_NUM_THREADS=16" before running the game. 
+*Note: Each time you open a new terminal you must type "export OMP_NUM_THREADS=2" before running the game. 

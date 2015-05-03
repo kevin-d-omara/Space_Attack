@@ -1,35 +1,43 @@
 !-------NEXT WAVE ANIMATION-------NEXT WAVE ANIMATION-------NEXT WAVE ANIMATION-------NEXT WAVE ANIMATION
-SUBROUTINE nextwave_2000(dframe,row,col,animation,i,j)
-	INTEGER :: dframe, i, j
-	INTEGER, intent(in) :: row, col
-	INTEGER, DIMENSION(row,col) :: animation
+SUBROUTINE nextwave_2000(dframe,anim_index)
+	INTEGER :: dframe, anim_index
 
-g_nextwave_2000: SELECT CASE(animation(i,j))
+g_nextwave_2000: SELECT CASE(anim_index)
 	CASE(2000)
-		WRITE(*,9001, advance='no') 'NEX' 
+		WRITE(*,9001, advance='no') 'NEX' 	!Next
 	CASE(2001)
 		WRITE(*,9001, advance='no') 'T W' 
 	CASE(2002)
-		WRITE(*,9001, advance='no') 'AVE' 
+		WRITE(*,9001, advance='no') 'AVE'
+	CASE(2003)
+		WRITE(*,9001, advance='no') 'LAS'	!Last 
+	CASE(2004)
+		WRITE(*,9001, advance='no') 'VIC'	!Victory
+	CASE(2005)
+		WRITE(*,9001, advance='no') 'TOR'
+	CASE(2006)
+		WRITE(*,9001, advance='no') 'Y‼‼' 
 	END SELECT g_nextwave_2000
 9001 FORMAT(A)
 
 RETURN 
 END SUBROUTINE nextwave_2000
 
-SUBROUTINE nextwave_2010(dframe,row,col,animation,i,j)
-	INTEGER :: dframe, i, j
-	INTEGER, intent(in) :: row, col
-	INTEGER, DIMENSION(row,col) :: animation
+SUBROUTINE nextwave_2010(dframe,anim_index)
+	INTEGER :: dframe, anim_index
 
 IF (MOD(dframe,2)/=0) THEN
-	g_nextwave_2010: SELECT CASE(animation(i,j))
+	g_nextwave_2010: SELECT CASE(anim_index)
 		CASE(2010)
 			WRITE(*,9001, advance='no') 'INC' 
 		CASE(2011)
 			WRITE(*,9001, advance='no') 'OMI' 
 		CASE(2012)
-			WRITE(*,9001, advance='no') 'NG‼' 
+			WRITE(*,9001, advance='no') 'NG‼'
+		CASE(2013)
+			WRITE(*,9001, advance='no') '★ ★' 	!✰
+		CASE(2014)
+			WRITE(*,9001, advance='no') ' ★ '
 		END SELECT g_nextwave_2010
 ELSE
 	WRITE(*,9001, advance='no') '   '

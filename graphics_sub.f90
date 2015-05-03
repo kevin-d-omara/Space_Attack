@@ -93,22 +93,22 @@ SUBROUTINE gunner_move(frame,rl)
 IF (rl==1) THEN		!rl==1 -> moving right
 	g_gunner_r: SELECT CASE(frame)
 		CASE(1)
-			WRITE(*,9001, advance='no') 'ℵ  '	!frame=1
+			WRITE(*,9001, advance='no') '⇼  '	!frame=1
 		CASE(2)	
-			WRITE(*,9001, advance='no') ' ℵ '	!frame=2
+			WRITE(*,9001, advance='no') ' ⇼ '	!frame=2
 		CASE DEFAULT
-			WRITE(*,9001, advance='no') '  ℵ'	!frame=3
+			WRITE(*,9001, advance='no') '  ⇼'	!frame=3
 		END SELECT g_gunner_r
 	9001 FORMAT(A)
 
 ELSE			!rl==0 -> moving left
 	g_gunner_l: SELECT CASE(frame)
 		CASE(1)
-			WRITE(*,9001, advance='no') '  ℵ'
+			WRITE(*,9001, advance='no') '  ⇼'
 		CASE(2)
-			WRITE(*,9001, advance='no') ' ℵ '
+			WRITE(*,9001, advance='no') ' ⇼ '
 		CASE DEFAULT
-			WRITE(*,9001, advance='no') 'ℵ  '
+			WRITE(*,9001, advance='no') '⇼  '
 		END SELECT g_gunner_l
 END IF
 RETURN
@@ -495,16 +495,56 @@ RETURN
 END SUBROUTINE shield_destroyed
 
 !-------COMBINATION------COMBINATION-------COMBINATION-------COMBINATION-------
-SUBROUTINE combination(frame)
-	INTEGER :: frame
+!NOTE: I originally attepted to make a more modular system involving character arrays.  Unfortunately, special characters
+! do not seem able to be stored in a character array/character.  As such, I had to use a less elegant solution which bypasses
+! this issue at the cost of simplicity and modularity
+SUBROUTINE combination(frame,anim_index)
+	INTEGER :: frame, anim_index, player_num, enemy_num
 
-	g_combination: SELECT CASE(frame)
-		CASE(1)
-			WRITE(*,9001, advance='no') ' ♅ '	!frame=1
-		CASE(2)	
-			WRITE(*,9001, advance='no') ' ♅ '	!frame=2
-		CASE DEFAULT
-			WRITE(*,9001, advance='no') ' ♅ '	!frame=3
+player_num=anim_index-MOD(anim_index,1000)			!isolate player projectile number
+enemy_num=anim_index-(anim_index+MOD(anim_index,1000))		!isolate enemy projectile number
+
+	g_combination: SELECT CASE(player_num)
+		CASE(-1000)				!laser
+			IF (enemy_num==10) THEN			!elaser
+				IF (frame==1) THEN
+					WRITE(*,9001,advance='no') '✣❈ '
+				ELSE IF (frame==2) THEN
+					WRITE(*,9001,advance='no') '✥❉ '
+				ELSE
+					WRITE(*,9001,advance='no') '✤❊ '
+				END IF
+			END IF
+		CASE(-2000)				!scattershot
+			IF (enemy_num==10) THEN			!elaser
+				IF (frame==1) THEN
+					WRITE(*,9001,advance='no') '✣⁂ '
+				ELSE IF (frame==2) THEN
+					WRITE(*,9001,advance='no') '✥⁂ '
+				ELSE
+					WRITE(*,9001,advance='no') '✤⁂ '
+				END IF
+			END IF
+		CASE(-3000)				!vaporizer
+			IF (enemy_num==10) THEN			!elaser
+				IF (frame==1) THEN
+					WRITE(*,9001,advance='no') '✣✸ '
+				ELSE IF (frame==2) THEN
+					WRITE(*,9001,advance='no') '✥✹ '
+				ELSE
+					WRITE(*,9001,advance='no') '✤✺ '
+				END IF
+			END IF
+		CASE(-4000)				!missile
+			IF (enemy_num==10) THEN			!elaser
+				IF (frame==1) THEN
+					WRITE(*,9001,advance='no') '✣❆ '
+				ELSE IF (frame==2) THEN
+					WRITE(*,9001,advance='no') '✥❂ '
+				ELSE
+					WRITE(*,9001,advance='no') '✤☢ '
+				END IF
+			END IF
 		END SELECT g_combination
 	9001 FORMAT(A)
 

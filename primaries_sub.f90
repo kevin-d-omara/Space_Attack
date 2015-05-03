@@ -23,16 +23,137 @@
 !	Enemy Laser		+1,+2,+3,...		
 !	Explosion		601,602,603		pre
 !	Warp			650			pre
-!	Combination Flag	666			pre
 !	Player			-777	
 !	Life Loss Animation	+999
 !	Loser Animation		+1000, +1001,...
-!	Next Wave Animation	+2000, +2001,...		
+!	Next Wave Animation	+2000, +2001,...
+!	Combination Flag	-1010, -2010,...	pre
+!	Kill Gcounter FLag	+6666
+!				(-1)=player projectile; (1)=enemy projectile
+
+!-------Gauntlet-------Gauntlet-------Gauntlet-------Gauntlet-------Gauntlet-------Gauntlet-------
+SUBROUTINE gauntlet(row,col,invader,powerup,spawn,select_spawn,gcounter,x00,rate)
+	IMPLICIT NONE
+	REAL :: u, v, rate(8)
+	INTEGER, intent(in) :: row, col
+	INTEGER, DIMENSION(row,col) :: invader, powerup
+	INTEGER :: spawn(21), v_int, gcounter, k, x00
+	LOGICAL :: select_spawn
+
+IF (select_spawn .EQV. .TRUE.) THEN		!select spawn package
+	CALL random_number(u)
+	IF (u<0.0451) THEN 	!1/25	4% chance to spawn package		!switch to rate(1)
+		CALL random_number(v)
+		v_int=100*v
+		package: SELECT CASE(v_int)
+			CASE(0:10)		!10x Invaders
+				spawn(1:10)=(/ (11, k=1,10) /)
+				spawn(15)=6666				!6666 is end of package flag
+			CASE(11:20)		!Invaders every other
+				DO k=1,20,2
+					spawn(k)=11
+				END DO
+			CASE(21:25)		! 5x Skirmisher
+				DO k=1,20,4
+					spawn(k)=21
+				END DO
+			CASE(26:30)		! 3x Bomber
+				DO k=1,18,6
+					spawn(k)=32
+				END DO
+			CASE(31:35)		! 3x Gunner
+				DO k=1,18,6
+					spawn(k)=42
+				END DO
+			CASE(36:40)		! 5x Warper
+				DO k=1,20,4
+					spawn(k)=61
+				END DO
+			CASE(41:45)		! 1x Shielder
+				spawn(1)=52
+				spawn(15)=6666
+			CASE(46:50)		! 1x Carrier
+				spawn(1)=74
+				spawn(15)=6666
+			CASE(51:55)		! 1x Shield escorting 4x Invaders
+				spawn(1:2)=(/ (11, k=1,2) /)
+				spawn(3)=52
+				spawn(4:5)=(/ (11, k=1,2) /)
+			CASE(56:60)		! 1x Carrier escorted by 2x Skirmishers
+				spawn(1)=21; spawn(5)=21
+				spawn(3)=74
+			CASE(61:65)		! 3x Skirmisher and 5x Warper
+				DO k=1,15,5
+					spawn(k)=21
+				END DO
+				DO k=2,20,4
+					spawn(k)=61
+				END DO
+			CASE(66:70)		! 10x Invader w/ random Warper
+				DO k=1,10
+					CALL random_number(u)
+					IF (u<.201) THEN
+						spawn(k)=61
+					ELSE
+						spawn(k)=11
+					END IF
+				END DO
+			CASE(71:75)		! 10x Invader w/ random Skirmisher
+				DO k=1,10
+					CALL random_number(u)
+					IF (u<.225) THEN
+						spawn(k)=21
+					ELSE
+						spawn(k)=11
+					END IF
+				END DO
+			CASE(76:81)		! 1x Invader
+				spawn(1)=11
+				spawn(2)=6666
+			CASE(82:84)		! 1x Skirmisher
+				spawn(1)=21
+				spawn(2)=6666
+			CASE(85:87)		! 1x Bomber
+				spawn(1)=32
+				spawn(2)=6666
+			CASE(88:90)		! 1x Gunner
+				spawn(1)=42
+				spawn(2)=6666
+			CASE(91:93)		! 1x Warper
+				spawn(1)=61
+				spawn(2)=6666
+			CASE(94:95)		! 1x Shielder
+				spawn(1)=52
+				spawn(2)=6666
+			CASE(96:97)		! 1x Carrier
+				spawn(1)=74
+				spawn(2)=6666
+			CASE(98:100)		! 1x Mothership (get fucked!)
+				spawn(1)=87
+			END SELECT package
+		select_spawn=.FALSE.	!trigger spawn sequence and pause select package
+	END IF
+ELSE						!spawning sequence
+	gcounter=gcounter+1
+	IF ((spawn(gcounter)/=6666).AND.(gcounter/=21)) THEN
+	x00=spawn(gcounter)
+	ELSE
+		spawn=0
+		gcounter=0
+		select_spawn=.TRUE.
+	END IF
+END IF
+
+CALL random_number(u)
+IF (u<rate(1)/2) powerup(2,1)=202		!1/82 Normal powerup chance
+
+RETURN
+END SUBROUTINE gauntlet
 
 !-------Move Invader-------Move Invader-------Move Invader-------Move Invader-------Move Invader-------
-SUBROUTINE move_invader(x00,x,elaser,row,col,animation,powerup,rate21,rate32,rate42,rate52,rate61,rate74,rate89)
+SUBROUTINE move_invader(x00,x,elaser,row,col,animation,powerup,rate)
 	IMPLICIT NONE
-	REAL :: u, v, rate21, rate32, rate42, rate52, rate61, rate74, rate89
+	REAL :: u, v, rate(8)
 	INTEGER :: x00, i, j, enemy_index, v_int, v_num
 	INTEGER, intent(in) :: row, col
 	INTEGER, DIMENSION (row,col) :: x, y, elaser, animation, powerup	!x==invader; y==temporary loading matrix
@@ -77,11 +198,11 @@ DO i=1,row,2		!enemy SPECIAL ABILITIES
 			enemy_abilities: SELECT CASE (x(i,j)-MOD(x(i,j),10))	!determine enemy type
 				CASE(20)	!skirmisher	#21
 					CALL random_number(u)
-					IF (u<rate21) elaser(i-1,j)=1	!fire laser every 1/10 turns
+					IF (u<rate(2)) elaser(i-1,j)=1	!fire laser every 1/10 turns
 
 				CASE(30)	!bomber		#32
 					CALL random_number(u)
-					IF (u<rate32) THEN	!fire triple laser every 1/18 turns
+					IF (u<rate(3)) THEN	!fire triple laser every 1/18 turns
 						IF (j/=1) elaser(i-1,j-1)=1
 						elaser(i-1,j)=1
 						IF (j/=col) elaser(i-1,j+1)=1
@@ -89,11 +210,11 @@ DO i=1,row,2		!enemy SPECIAL ABILITIES
 
 				CASE(40)	!gunner		#42
 					CALL random_number(u)
-					IF (u<rate42) elaser(i-1,j)=1	!fire laser every 1/6 turns
+					IF (u<rate(4)) elaser(i-1,j)=1	!fire laser every 1/6 turns
 
 				CASE(50)	!shielder	#52
 					CALL random_number(u)
-					IF (u<rate52) THEN	!re-spawns forcefield every 1/10 turns
+					IF (u<rate(5)) THEN	!re-spawns forcefield every 1/10 turns
 						CALL random_number(v)	!shields spawn displaced by 1 because powerups move immediately after
 						v_int=100*v
 						shield_spawn: SELECT CASE(v_int)		!which shield respawns?
@@ -176,19 +297,19 @@ DO i=1,row,2		!enemy SPECIAL ABILITIES
 
 				CASE(60)	!warper		#61
 					CALL random_number(u)		!warps 1/11 turns
-					IF (u<rate61) THEN	!3% warp down
+					IF (u<rate(6)) THEN	!3% warp down
 						IF ((x(i+2,j)==0).AND.(i/=row-2)) THEN
 							x(i+2,j)=x(i,j)		!warp down
 							x(i,j)=0		!clear old space
 							animation(i,j)=650	!flag warp animation
 						END IF
-					ELSE IF (u<2*rate61) THEN	!3% warp right
+					ELSE IF (u<2*rate(6)) THEN	!3% warp right
 						IF ((x(i,j+1)==0).AND.(j/=col)) THEN
 							x(i,j+1)=x(i,j)		!warp right
 							x(i,j)=0		!clear old space
 							animation(i,j)=650	!flag warp animation
 						END IF
-					ELSE IF (u<3*rate61) THEN	!3% warp left
+					ELSE IF (u<3*rate(6)) THEN	!3% warp left
 						IF ((x(i,j-1)==0).AND.(j/=1)) THEN
 							x(i,j-1)=x(i,j)		!warp left
 							x(i,j)=0		!clear old space
@@ -198,17 +319,17 @@ DO i=1,row,2		!enemy SPECIAL ABILITIES
 
 				CASE(70)	!carrier	#74
 					CALL random_number(u)		!spawns 1/25 turns
-					IF (u<rate74)	THEN	!1% spawn down
+					IF (u<rate(7))	THEN	!1% spawn down
 						IF ((x(i+2,j)==0).AND.(i/=row-2)) x(i+2,j)=11		!spawn invader down
-					ELSE IF (u<2*rate74) THEN	!1% spawn up
+					ELSE IF (u<2*rate(7)) THEN	!1% spawn up
 						IF (i/=1) THEN
 							IF (x(i-2,j)==0) x(i-2,j)=11			!spawn invader up
 						END IF
-					ELSE IF (u<3*rate74) THEN	!1% spawn right
+					ELSE IF (u<3*rate(7)) THEN	!1% spawn right
 						IF (j/=col) THEN
 							IF (x(i,j+1)==0) x(i,j+1)=11			!spawn invader right
 						END IF
-					ELSE IF (u<4*rate74) THEN	!1% spawn left
+					ELSE IF (u<4*rate(7)) THEN	!1% spawn left
 						IF (j/=1) THEN
 							IF (x(i,j-1)==0) x(i,j-1)=11			!spawn invader left
 						END IF
@@ -216,16 +337,16 @@ DO i=1,row,2		!enemy SPECIAL ABILITIES
 
 				CASE(80)	!mothership	#89
 					CALL random_number(u)
-					IF (u<rate42) elaser(i-1,j)=1	!fire laser every 1/6 turns
+					IF (u<rate(4)) elaser(i-1,j)=1	!fire laser every 1/6 turns
 					CALL random_number(u)
-					IF (u<rate32) THEN		!fire triple laser every 1/18 turns
+					IF (u<rate(3)) THEN		!fire triple laser every 1/18 turns
 						IF (j/=1) elaser(i-1,j-1)=1
 						elaser(i-1,j)=1
 						IF (j/=col) elaser(i-1,j+1)=1
 					END IF
 					CALL random_number(u)
 					!SPAWNING
-					IF (u<4*rate89) THEN		!spawns 1/20 turns
+					IF (u<4*rate(8)) THEN		!spawns 1/20 turns
 						CALL random_number(v)
 						v_int=100*v
 						mother_spawn: SELECT CASE(v_int)	!determine unit to be spawned
@@ -244,17 +365,17 @@ DO i=1,row,2		!enemy SPECIAL ABILITIES
 							CASE(99:100)
 								v_num=74	!carrier
 							END SELECT mother_spawn
-						IF (u<rate89)	THEN		!1.25% spawn down
+						IF (u<rate(8))	THEN		!1.25% spawn down
 							IF ((x(i+2,j)==0).AND.(i/=row-2)) x(i+2,j)=v_num	!spawn invader down
-						ELSE IF (u<2*rate89) THEN	!1.25% spawn up
+						ELSE IF (u<2*rate(8)) THEN	!1.25% spawn up
 							IF (i/=1) THEN
 								IF (x(i-2,j)==0) x(i-2,j)=v_num			!spawn invader up
 							END IF
-						ELSE IF (u<3*rate89) THEN	!1.25% spawn right
+						ELSE IF (u<3*rate(8)) THEN	!1.25% spawn right
 							IF (j/=col) THEN
 								IF (x(i,j+1)==0) x(i,j+1)=v_num			!spawn invader right
 							END IF
-						ELSE IF (u<4*rate89) THEN	!1.25% spawn left
+						ELSE IF (u<4*rate(8)) THEN	!1.25% spawn left
 							IF (j/=1) THEN
 								IF (x(i,j-1)==0) x(i,j-1)=v_num			!spawn invader left
 							END IF
@@ -314,9 +435,10 @@ RETURN
 END SUBROUTINE move_powerup
 
 !-------Move Laser-------Move Laser-------Move Laser-------Move Laser-------Move Laser-------
-SUBROUTINE move_laser(laser,invader,powerup,animation,row,col,eplaser,kills,hits,score,lives,multiplier,damageboost)
+SUBROUTINE move_laser(laser,invader,powerup,animation,row,col,eplaser,kills,hits,score,lives,multiplier,damageboost,&
+												num_ordinance)
 	IMPLICIT NONE
-	INTEGER :: i, j, eplaser, kills, hits, score, lives
+	INTEGER :: i, j, eplaser, kills, hits, score, lives, num_ordinance(5)
 	INTEGER, intent(in) :: row, col
 	INTEGER, DIMENSION (row,col) :: laser, invader, powerup, animation
 	LOGICAL :: multiplier, damageboost
@@ -331,7 +453,7 @@ DO i=0,row-3,2		!scale even rows (laser)
 					laser(i+2,j)=0			!clear old space
 				ELSE								!INVADER
 					CALL projectile_type_i(laser,invader,animation,powerup,&
-							row,col,i,j,kills,hits,score,eplaser,lives,multiplier,damageboost)
+				row,col,i,j,kills,hits,score,eplaser,lives,multiplier,damageboost,num_ordinance)
 				END IF
 			ELSE		!other rows
 				IF ((invader(i+1,j)==0).AND.(powerup(i,j)==0)) THEN		!NONE invader/powerup
@@ -339,10 +461,10 @@ DO i=0,row-3,2		!scale even rows (laser)
 					laser(i+2,j)=0			!clear old space
 				ELSE IF (invader(i+1,j)/=0) THEN				!INVADER
 					CALL projectile_type_i(laser,invader,animation,powerup,&
-							row,col,i,j,kills,hits,score,eplaser,lives,multiplier,damageboost)
+				row,col,i,j,kills,hits,score,eplaser,lives,multiplier,damageboost,num_ordinance)
 				ELSE								!POWERUP
 					CALL projectile_type_p(laser,powerup,animation,invader,&
-							row,col,i,j,kills,hits,score,eplaser,lives,multiplier,damageboost)
+				row,col,i,j,kills,hits,score,eplaser,lives,multiplier,damageboost,num_ordinance)
 				END IF
 			END IF
 		END IF
@@ -354,9 +476,10 @@ RETURN
 END SUBROUTINE move_laser
 
 !-------Projectile Type_Invader-------Projectile Type_Invader-------Projectile Type_Invader-------
-SUBROUTINE projectile_type_i(laser,invader,animation,powerup,row,col,i,j,kills,hits,score,eplaser,lives,multiplier,damageboost)
+SUBROUTINE projectile_type_i(laser,invader,animation,powerup,row,col,i,j,kills,hits,score,eplaser,lives,multiplier,damageboost,&
+												num_ordinance)
 	IMPLICIT NONE
-	INTEGER :: k, h, l, kills, hits, score, eplaser, lives
+	INTEGER :: k, h, l, kills, hits, score, eplaser, lives, num_ordinance(5)
 	INTEGER, intent(in) :: row, col, i, j
 	INTEGER, DIMENSION(row,col) :: laser, invader, animation, powerup
 	LOGICAL :: multiplier, damageboost
@@ -442,7 +565,7 @@ ELSE IF (laser(i+2,j)==-4) THEN		!IF MISSILE	#-4
 						END IF	
 						IF ((mod(powerup(l,h),10)==0).AND.(powerup(l,h)/=0)) THEN	!if killed
 							CALL powerup_death(powerup,animation,row,col,i,h,kills,hits,score&
-										,eplaser,lives,multiplier,damageboost)!determine powerup type
+						,eplaser,lives,multiplier,damageboost,num_ordinance)!determine powerup type
 							powerup(l,h)=0		!clear dead powerup space
 						END IF
 					END IF
@@ -457,9 +580,10 @@ RETURN
 END SUBROUTINE projectile_type_i
 
 !-------Projectile Type_Powerup-------Projectile Type_Powerup-------Projectile Type_Powerup-------
-SUBROUTINE projectile_type_p(laser,powerup,animation,invader,row,col,i,j,kills,hits,score,eplaser,lives,multiplier,damageboost)
+SUBROUTINE projectile_type_p(laser,powerup,animation,invader,row,col,i,j,kills,hits,score,eplaser,lives,multiplier,damageboost,&
+													num_ordinance)
 	IMPLICIT NONE
-	INTEGER :: k, h, l, kills, hits, score, eplaser, lives
+	INTEGER :: k, h, l, kills, hits, score, eplaser, lives, num_ordinance(5)
 	INTEGER, intent(in) :: row, col, i, j
 	INTEGER, DIMENSION(row,col) :: laser, powerup, animation, invader
 	LOGICAL :: multiplier, damageboost
@@ -479,7 +603,8 @@ IF (laser(i+2,j)==-1) THEN		!IF LASER	#-1
 	END IF
 	laser(i+2,j)=0				!clear old laser space
 	IF (mod(powerup(i,j),10)==0) THEN	!if destroyed
-		CALL powerup_death(powerup,animation,row,col,i,j,kills,hits,score,eplaser,lives,multiplier,damageboost)!determine powerup type
+		CALL powerup_death(powerup,animation,row,col,i,j,kills,hits,score,eplaser,lives,multiplier,damageboost,&
+										num_ordinance)!determine powerup type
 		powerup(i,j)=0		!clear dead powerup space
 	END IF
 
@@ -488,7 +613,8 @@ ELSE IF (laser(i+2,j)==-2) THEN		!IF PIERCING	#-2
 	laser(i+2,j)=0				!clear old laser space
 	laser(i,j)=-1				!propagate standard laser
 	IF (mod(powerup(i,j),10)==0) THEN	!if destroyed
-		CALL powerup_death(powerup,animation,row,col,i,j,kills,hits,score,eplaser,lives,multiplier,damageboost)!determine powerup type
+		CALL powerup_death(powerup,animation,row,col,i,j,kills,hits,score,eplaser,lives,multiplier,damageboost,&
+										num_ordinance)!determine powerup type
 		powerup(i,j)=0		!clear dead powerup space
 	END IF
 ELSE IF (laser(i+2,j)==-3) THEN		!IF VAPORIZER	#-3
@@ -500,7 +626,8 @@ ELSE IF (laser(i+2,j)==-3) THEN		!IF VAPORIZER	#-3
 	END IF
 	laser(i+2,j)=0				!clear old laser space
 	IF (mod(powerup(i,j),10)==0) THEN	!if destroyed
-		CALL powerup_death(powerup,animation,row,col,i,j,kills,hits,score,eplaser,lives,multiplier,damageboost)!determine powerup type
+		CALL powerup_death(powerup,animation,row,col,i,j,kills,hits,score,eplaser,lives,multiplier,damageboost,&
+										num_ordinance)!determine powerup type
 		powerup(i,j)=0		!clear dead powerup space
 	END IF
 ELSE IF (laser(i+2,j)==-4) THEN		!IF MISSILE	#-4
@@ -519,7 +646,7 @@ ELSE IF (laser(i+2,j)==-4) THEN		!IF MISSILE	#-4
 			END IF
 			IF ((mod(powerup(i,h),10)==0).AND.(powerup(i,h)/=0)) THEN	!if destroyed
 				CALL powerup_death(powerup,animation,row,col,i,h,kills,hits,score,eplaser,lives,&
-											multiplier,damageboost) !determine powerup type
+								multiplier,damageboost,num_ordinance) !determine powerup type
 				powerup(i,h)=0		!clear dead powerup space
 			END IF
 		END IF
@@ -555,9 +682,10 @@ RETURN
 END SUBROUTINE projectile_type_p
 
 !-------Move Enemy Laser-------Move Enemy Laser-------Move Enemy Laser-------Move Enemy Laser-------
-SUBROUTINE move_enemy_laser(elaser,invader,powerup,animation,row,col,lives,eplaser,kills,hits,score,multiplier,damageboost)
+SUBROUTINE move_enemy_laser(elaser,invader,powerup,animation,row,col,lives,eplaser,kills,hits,score,multiplier,damageboost,&
+												num_ordinance)
 	IMPLICIT NONE
-	INTEGER :: i, j, l, k, lives, eplaser, kills, hits, score
+	INTEGER :: i, j, l, k, lives, eplaser, kills, hits, score, num_ordinance(5)
 	INTEGER, intent(in) :: row, col
 	INTEGER, DIMENSION (row,col) :: elaser, invader, powerup,animation
 	LOGICAL :: multiplier, damageboost
@@ -582,7 +710,7 @@ DO l=2,row-1,2		!scale even rows (elaser)
 					elaser(i,j)=0					!clear old elaser space
 					IF (mod(powerup(i+2,j),10)==0) THEN		!if destroyed
 						CALL powerup_death(powerup,animation,row,col,i+2,j,kills,&
-										hits,score,eplaser,lives,multiplier,damageboost)
+						hits,score,eplaser,lives,multiplier,damageboost,num_ordinance)
 						powerup(i+2,j)=0			!clear dead powerup space
 					END IF
 				ELSE							!NO powerup
@@ -704,18 +832,19 @@ enemy_index_score: SELECT CASE(invader(i+1,j))	!update score
 	CASE(70)
 		score=score+300	!kill carrier		#74
 	CASE(80)
-		score=score+650	!kill mothership	#89
+		score=score+650	!kill mothership	#87
 	END SELECT enemy_index_score
 
 RETURN
 END SUBROUTINE death_animation
 
 !-------Powerup Death Animation-------Powerup Death Animation-------Powerup Animation-------
-SUBROUTINE powerup_death(powerup,animation,row,col,i,j,kills,hits,score,eplaser,lives,multiplier,damageboost)
+SUBROUTINE powerup_death(powerup,animation,row,col,i,j,kills,hits,score,eplaser,lives,multiplier,damageboost,&
+											num_ordinance)
 	IMPLICIT NONE
 	REAL :: u
-	INTEGER :: kills, hits, score, eplaser, u_int, lives		!powerup 	#202 (i.e. 2 Health)
-	INTEGER, intent(in) :: row, col, i, j				!force field	#291
+	INTEGER :: kills, hits, score, eplaser, u_int, lives, num_ordinance(5)		!powerup 	#202 (i.e. 2 Health)
+	INTEGER, intent(in) :: row, col, i, j						!force field	#291
 	INTEGER, DIMENSION(row,col) :: powerup, animation
 	LOGICAL :: multiplier, damageboost
 
@@ -733,6 +862,14 @@ IF (eplaser==1) THEN	!if player destroyed powerup
 				multiplier=.TRUE.
 			CASE(51:75)
 				animation(i,j)=-230		!flag destroyed + Ammo		#-230
+				CALL random_number(u)
+				IF (u<0.331) THEN
+					num_ordinance(1)=num_ordinance(1)+3
+				ELSE IF (u<0.661) THEN
+					num_ordinance(2)=num_ordinance(2)+2
+				ELSE
+					num_ordinance(3)=num_ordinance(3)+1
+				END IF
 			CASE(76:100)
 				animation(i,j)=-240		!flag destroyed 2x Damage	#-240
 				damageboost=.TRUE.

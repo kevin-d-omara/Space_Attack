@@ -9,7 +9,7 @@ Spacemake: Space_Attack.f90 graphics_sub.f90 primaries_sub.f90 lose_animation.f9
 	@echo complete!
 	@echo
 	@echo --------------------------------------
-	@echo Please type: export OMP_NUM_THREADS=16
+	@echo Please type: export OMP_NUM_THREADS=2
 	@echo --------------------------------------
 	@echo
 	@echo --------------------------------------

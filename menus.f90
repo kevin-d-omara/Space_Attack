@@ -1,23 +1,22 @@
 ! This block initializes all the relevant variables before loading the menu sequence.
-SUBROUTINE menu_initialize(wmenu,wchoice,endgame,manim,rblank,shoot,right,left,scattershot,vaporizer,missile,&
-							difficulty,gametype,num_scat,num_vape,num_miss,ordinancepoints,yesno)
+SUBROUTINE menu_initialize(wmenu,wchoice,endgame,manim,rblank,control,difficulty,gametype,num_ordinance,ordinancepoints,yesno,cheat)
 	IMPLICIT NONE
-	CHARACTER(10) :: wmenu, difficulty, gametype
-	CHARACTER(1) ::	shoot, right, left, scattershot, vaporizer, missile
-	INTEGER :: wchoice, endgame, num_scat, num_vape, num_miss, ordinancepoints, yesno
-	LOGICAL :: rblank, manim, cheat1, cheat2
+	CHARACTER(10) :: wmenu, gametype
+	CHARACTER(1), DIMENSION(2,5) ::	control
+	INTEGER :: wchoice, endgame, ordinancepoints, yesno, num_ordinance(5), difficulty
+	LOGICAL :: rblank, manim, cheat(5)
 
 wmenu='Intro'	!set to intro screen
 wchoice=1	!set to default choice
 endgame=0	!set to game off
 manim=.FALSE.	!set menu animation flag off
 rblank=.TRUE.	!set to read blank (i.e. press enter, no key required)
- cheat1=.FALSE.	!set Year o' Plenty to De-Active
- cheat2=.FALSE. !set Fiver to De-Active
-shoot='w'; right='d'; left='a'; scattershot='1'; vaporizer='2'; missile='3'	!set default controls
-difficulty='Normal'	!set difficulty
+ cheat=.FALSE.	!set all chets to De-Active -> 1 = Year o' Plenty; 2 = Fiver
+control(1,1)='w'; control(1,2)='d'; control(1,3)='a'	!shoot; right; left
+control(2,1)='1'; control(2,2)='2'; control(2,3)='3'; control(2,4)='4'; control(2,5)='5'	!scatterhots; vaporizer; missile
+difficulty=1	!set difficulty -> 0 = Easy; 1 = Normal; 2 = Brutal
 gametype='Standard'	!set gametype
-num_scat=2; num_vape=2; num_miss=1	!set starting Special Ordinance
+num_ordinance(1)=2; num_ordinance(2)=2; num_ordinance(3)=1	!set starting Special Ordinance
 ordinancepoints=9	!set "Normal" allotment of ordinance points
 yesno=1		!set game to ON
 
@@ -28,13 +27,14 @@ END SUBROUTINE menu_initialize
 ! This block takes "wchoice" and "wmenu" and a) which menu player is in and b) what choice they selected
 ! It then decides the appropriate course of action, either a) flag animation for selection or b) set wmenu
 ! to the next menu selected.
-SUBROUTINE which_option(command,wchoice,wmenu,manim,rblank,shoot,right,left,scattershot,&
-			vaporizer,missile,difficulty,gametype,num_vape,num_scat,num_miss,total,ordinancepoints,yesno,lives,cheat1,cheat2)
+SUBROUTINE which_option(command,wchoice,wmenu,manim,rblank,control,difficulty,gametype,num_ordinance,&
+								total,ordinancepoints,yesno,lives,cheat)
 	IMPLICIT NONE
-	CHARACTER(1) :: command, shoot, right, left, scattershot, vaporizer, missile
-	CHARACTER(10) :: wmenu, difficulty, gametype
-	INTEGER :: wchoice, num_scat, num_vape, num_miss, total, ordinancepoints, yesno, lives
-	LOGICAL :: manim, rblank, cheat1, cheat2
+	CHARACTER(1) :: command
+	CHARACTER(1), DIMENSION(2,5) :: control
+	CHARACTER(10) :: wmenu, gametype
+	INTEGER :: wchoice, total, ordinancepoints, yesno, lives, num_ordinance(5), difficulty
+	LOGICAL :: manim, rblank, cheat(5)
 
 option_selector: SELECT CASE(wmenu)
 	CASE('Intro')
@@ -96,20 +96,20 @@ option_selector: SELECT CASE(wmenu)
 				wchoice=1	!flag choice
 				manim=.TRUE.	!flag animation on
 			ELSE
-				IF (cheat1 .EQV. .FALSE.) THEN
-					cheat1=.TRUE.
+				IF (cheat(1) .EQV. .FALSE.) THEN
+					cheat(1)=.TRUE.
 					ordinancepoints=99	!Year o' Plenty Cheat
 				ELSE
-					cheat1=.FALSE.
-					IF (difficulty=='Brutal') THEN	!set difficulty
+					cheat(1)=.FALSE.
+					IF (difficulty==2) THEN	!set difficulty
 						ordinancepoints=3	!set allotment of ordinance points
-						num_scat=0; num_vape=0; num_miss=1
-					ELSE IF (difficulty=='Easy') THEN
+						num_ordinance(1)=0; num_ordinance(2)=0; num_ordinance(3)=1
+					ELSE IF (difficulty==0) THEN
 						ordinancepoints=15	!set allotment of ordinance points
-						num_scat=2; num_vape=2; num_miss=3
+						num_ordinance(1)=2; num_ordinance(2)=2; num_ordinance(3)=3
 					ELSE
 						ordinancepoints=9	!set allotment of ordinance points
-						num_scat=2; num_vape=2; num_miss=1
+						num_ordinance(1)=2; num_ordinance(2)=2; num_ordinance(3)=1
 					END IF
 				END IF
 				manim=.FALSE.	!de-flag menu animation
@@ -119,10 +119,10 @@ option_selector: SELECT CASE(wmenu)
 				wchoice=2	!flag choice
 				manim=.TRUE.	!flag animation on
 			ELSE
-				IF (cheat2 .EQV. .FALSE.) THEN
-					cheat2=.TRUE.		!Fiver Cheat
+				IF (cheat(2) .EQV. .FALSE.) THEN
+					cheat(2)=.TRUE.		!Fiver Cheat
 				ELSE
-					cheat2=.FALSE.
+					cheat(2)=.FALSE.
 				END IF
 				manim=.FALSE.	!de-flag menu animation
 			END IF
@@ -162,18 +162,18 @@ option_selector: SELECT CASE(wmenu)
 				wchoice=2	!flag choice
 				manim=.TRUE.	!flag animation on
 			ELSE
-				IF (difficulty=='Normal') THEN	!set difficulty
-					difficulty='Brutal'	!set Brutal
+				IF (difficulty==1) THEN	!set difficulty
+					difficulty=2		!set Brutal
 					ordinancepoints=3	!set allotment of ordinance points
-					num_scat=0; num_vape=0; num_miss=1
-				ELSE IF (difficulty=='Brutal') THEN
-					difficulty='Easy'	!set Easy
+					num_ordinance(1)=0; num_ordinance(2)=0; num_ordinance(3)=1
+				ELSE IF (difficulty==2) THEN
+					difficulty=0		!set Easy
 					ordinancepoints=15	!set allotment of ordinance points
-					num_scat=2; num_vape=2; num_miss=3
+					num_ordinance(1)=2; num_ordinance(2)=2; num_ordinance(3)=3
 				ELSE
-					difficulty='Normal'	!set Normal
+					difficulty=1		!set Normal
 					ordinancepoints=9	!set allotment of ordinance points
-					num_scat=2; num_vape=2; num_miss=1
+					num_ordinance(1)=2; num_ordinance(2)=2; num_ordinance(3)=1
 				END IF
 				manim=.FALSE.	!de-flag menu animation
 			END IF
@@ -193,7 +193,7 @@ option_selector: SELECT CASE(wmenu)
 			IF (manim .EQV. .FALSE.) THEN
 				wchoice=4	!flag choice
 				manim=.TRUE.	!flag animation on
-				IF (num_scat<ordinancepoints) num_scat=num_scat+1	!+1 scattershot
+				IF (num_ordinance(1)<ordinancepoints) num_ordinance(1)=num_ordinance(1)+1	!+1 scattershot
 			ELSE
 				manim=.FALSE.	!de-flag menu animation
 			END IF
@@ -201,7 +201,7 @@ option_selector: SELECT CASE(wmenu)
 			IF (manim .EQV. .FALSE.) THEN
 				wchoice=5	!flag choice
 				manim=.TRUE.	!flag animation on
-				IF (num_scat>0) num_scat=num_scat-1		!-1 scattershot
+				IF (num_ordinance(1)>0) num_ordinance(1)=num_ordinance(1)-1		!-1 scattershot
 			ELSE
 				manim=.FALSE.	!de-flag menu animation
 			END IF
@@ -209,7 +209,7 @@ option_selector: SELECT CASE(wmenu)
 			IF (manim .EQV. .FALSE.) THEN
 				wchoice=6	!flag choice
 				manim=.TRUE.	!flag animation on
-				IF (num_vape<1+ordinancepoints/2) num_vape=num_vape+1	!+1 vaporizer			
+				IF (num_ordinance(2)<1+ordinancepoints/2) num_ordinance(2)=num_ordinance(2)+1	!+1 vaporizer			
 			ELSE
 				manim=.FALSE.	!de-flag menu animation
 			END IF
@@ -217,7 +217,7 @@ option_selector: SELECT CASE(wmenu)
 			IF (manim .EQV. .FALSE.) THEN
 				wchoice=7	!flag choice
 				manim=.TRUE.	!flag animation on
-				IF (num_vape>0) num_vape=num_vape-1		!-1 vaporizer			
+				IF (num_ordinance(2)>0) num_ordinance(2)=num_ordinance(2)-1		!-1 vaporizer			
 			ELSE
 				manim=.FALSE.	!de-flag menu animation
 			END IF
@@ -225,7 +225,7 @@ option_selector: SELECT CASE(wmenu)
 			IF (manim .EQV. .FALSE.) THEN
 				wchoice=8	!flag choice
 				manim=.TRUE.	!flag animation on
-				IF (num_miss<ordinancepoints/3) num_miss=num_miss+1	!+1 missile			
+				IF (num_ordinance(3)<ordinancepoints/3) num_ordinance(3)=num_ordinance(3)+1	!+1 missile			
 			ELSE
 				manim=.FALSE.	!de-flag menu animation
 			END IF
@@ -233,7 +233,7 @@ option_selector: SELECT CASE(wmenu)
 			IF (manim .EQV. .FALSE.) THEN
 				wchoice=9	!flag choice
 				manim=.TRUE.	!flag animation on
-				IF (num_miss>0) num_miss=num_miss-1		!-1 missile			
+				IF (num_ordinance(3)>0) num_ordinance(3)=num_ordinance(3)-1		!-1 missile			
 			ELSE
 				manim=.FALSE.	!de-flag menu animation
 			END IF
@@ -254,7 +254,7 @@ option_selector: SELECT CASE(wmenu)
 				manim=.TRUE.	!flag animation on
 			ELSE
 				READ(*,*) command!read command
-				shoot=command	!read "shoot" key
+				control(1,1)=command	!read "shoot" key
 				manim=.FALSE.	!de-flag menu animation
 			END IF
 		ELSE IF (command=='2') THEN
@@ -263,7 +263,7 @@ option_selector: SELECT CASE(wmenu)
 				manim=.TRUE.	!flag animation on
 			ELSE
 				READ(*,*) command!read command
-				right=command	!read "right" key
+				control(1,2)=command	!read "right" key
 				manim=.FALSE.	!de-flag menu animation
 			END IF
 		ELSE IF (command=='3') THEN
@@ -272,7 +272,7 @@ option_selector: SELECT CASE(wmenu)
 				manim=.TRUE.	!flag animation on
 			ELSE
 				READ(*,*) command!read command
-				left=command	!read "left" key
+				control(1,3)=command	!read "left" key
 				manim=.FALSE.	!de-flag menu animation
 			END IF
 		ELSE IF (command=='4') THEN
@@ -281,7 +281,7 @@ option_selector: SELECT CASE(wmenu)
 				manim=.TRUE.	!flag animation on
 			ELSE
 				READ(*,*) command!read command
-				scattershot=command!read "scattershot" key
+				control(2,1)=command!read "scattershot" key
 				manim=.FALSE.	!de-flag menu animation
 			END IF
 		ELSE IF (command=='5') THEN
@@ -290,7 +290,7 @@ option_selector: SELECT CASE(wmenu)
 				manim=.TRUE.	!flag animation on
 			ELSE
 				READ(*,*) command!read command
-				vaporizer=command!read "vaporizer" key
+				control(2,2)=command!read "vaporizer" key
 				manim=.FALSE.	!de-flag menu animation
 			END IF
 		ELSE IF (command=='6') THEN
@@ -299,7 +299,7 @@ option_selector: SELECT CASE(wmenu)
 				manim=.TRUE.	!flag animation on
 			ELSE
 				READ(*,*) command!read command
-				missile=command	!read "missile" key
+				control(2,3)=command	!read "missile" key
 				manim=.FALSE.	!de-flag menu animation
 			END IF
 		ELSE IF (command=='9') THEN
@@ -307,8 +307,8 @@ option_selector: SELECT CASE(wmenu)
 				wchoice=9	!flag choice
 				manim=.TRUE.	!flag animation on
 			ELSE
-				shoot='w'; right='d'; left='a'
-				scattershot='1'; vaporizer='2'; missile='3'
+				control(1,1)='w'; control(1,2)='d'; control(1,3)='a'
+				control(2,1)='1'; control(2,2)='2'; control(2,3)='3'
 				manim=.FALSE.	!de-flag menu animation
 			END IF
 		ELSE IF (command=='0') THEN
@@ -488,26 +488,27 @@ END SUBROUTINE which_option
 !------- SELECT MENU ------- SELECT MENU ------- SELECT MENU -------
 ! This block is used to load the appropriate strings before printing.  It uses "wmenu"
 ! and "wchoice" to determine the correct strings to load.
-SUBROUTINE select_menu(string,length,row_num,last,row,col,wmenu,wchoice,manim,shoot,right,left,&
-		scattershot,vaporizer,missile,difficulty,gametype,num_vape,num_scat,num_miss,total,ordinancepoints,lives,cheat1,cheat2)
+SUBROUTINE select_menu(string,length,row_num,last,row,col,wmenu,wchoice,manim,control,difficulty,gametype,&
+							num_ordinance,total,ordinancepoints,lives,cheat)
 	IMPLICIT NONE
 	CHARACTER(3*col), DIMENSION(row) :: string
-	CHARACTER(10) :: wmenu, difficulty, gametype
-	CHARACTER(1) :: shoot, right, left, scattershot, vaporizer, missile, Lnum_scat, Lnum_vape, Lnum_miss
+	CHARACTER(10) :: wmenu, gametype
+	CHARACTER(1), DIMENSION(2,5) :: control
+	CHARACTER(1), DIMENSION(5) :: Lnum_ordinance
 	CHARACTER(LEN=2) :: Ltotal, Lordinancepoints
 	INTEGER, intent(in) :: row, col
-	INTEGER :: length(row), row_num(row), last, wchoice, k, num_scat, num_vape, num_miss,total, ordinancepoints, lives
-	LOGICAL :: manim, cheat1, cheat2
+	INTEGER :: length(row), row_num(row), last, wchoice, k, total, ordinancepoints, lives, num_ordinance(5), difficulty
+	LOGICAL :: manim, cheat(5)
 
 menu_selector: SELECT CASE(wmenu)
 	CASE('Intro')		!INTRO
-		string(1)='♅  ♓  ☫  ℵ  ۞  ♑  ⋤  ↂ  ♅'
+		string(1)='♅  ♓  ☫  ⇼  ۞  ♑  ⋤  ↂ  ♅'
 		length(1)=25;	row_num(1)=3
 
 		string(2)='♅     Space  Attack     ♅'
 		length(2)=25;	row_num(2)=4
 
-		string(3)='♅  ↂ  ⋥  ♑  ۞  ℵ  ☫  ♓  ♅'
+		string(3)='♅  ↂ  ⋥  ♑  ۞  ⇼  ☫  ♓  ♅'
 		length(3)=25;	row_num(3)=5
 
 		IF (manim .EQV. .FALSE.) THEN
@@ -589,7 +590,7 @@ menu_selector: SELECT CASE(wmenu)
 		string(1)='⋲         Cheats        ⋺'
 		length(1)=25;	row_num(1)=3
 
-		IF (cheat1 .EQV. .FALSE.) THEN
+		IF (cheat(1) .EQV. .FALSE.) THEN
 			string(2)="(1) Year o' Plenty: De-Active"
 			length(2)=29
 
@@ -599,7 +600,7 @@ menu_selector: SELECT CASE(wmenu)
 		END IF
 		row_num(2)=6
 
-		IF (cheat2 .EQV. .FALSE.) THEN
+		IF (cheat(2) .EQV. .FALSE.) THEN
 			string(3)='(2) Fiver: De-Active'
 			length(3)=20
 		ELSE
@@ -635,10 +636,10 @@ menu_selector: SELECT CASE(wmenu)
 		END IF
 		row_num(2)=5
 
-		IF (difficulty=='Normal') THEN
+		IF (difficulty==1) THEN
 			string(3)='(2) Difficulty: Normal'
 			length(3)=22
-		ELSE IF (difficulty=='Brutal') THEN
+		ELSE IF (difficulty==2) THEN
 			string(3)='(2) Difficulty: Brutal'
 			length(3)=22
 		ELSE
@@ -660,7 +661,7 @@ menu_selector: SELECT CASE(wmenu)
 		length(5)=21
 		row_num(5)=9
 
-		total=num_scat+2*num_vape+3*num_miss	!total ordinance points remaining
+		total=num_ordinance(1)+2*num_ordinance(2)+3*num_ordinance(3)	!total ordinance points remaining
 		IF (ordinancepoints<10) THEN
 			WRITE(Lordinancepoints,10) ordinancepoints	!record ordinance points
 			k=1	!numer of columns occupied by Lordinancepoints
@@ -694,9 +695,9 @@ menu_selector: SELECT CASE(wmenu)
 		END IF
 		row_num(6)=10
 
-		10 FORMAT(i1); 20 FORMAT(i2)
-		WRITE(Lnum_scat,10) num_scat
-		string(7)='⁂  Scattershot [1 Point]: ' // Lnum_scat
+		10 FORMAT(i1); 20 FORMAT(i2)					!BINGO
+		WRITE(Lnum_ordinance(1),10) num_ordinance(1)
+		string(7)='⁂  Scattershot [1 Point]: ' // Lnum_ordinance(1)
 		length(7)=27
 		row_num(7)=12
 
@@ -709,8 +710,8 @@ menu_selector: SELECT CASE(wmenu)
 		END IF
 		row_num(8)=13
 
-		WRITE(Lnum_vape,10) num_vape
-		string(9)='✹  Vaporizer [2 Points]: ' // Lnum_vape
+		WRITE(Lnum_ordinance(2),10) num_ordinance(2)
+		string(9)='✹  Vaporizer [2 Points]: ' // Lnum_ordinance(2)
 		length(9)=26
 		row_num(9)=14
 
@@ -723,8 +724,8 @@ menu_selector: SELECT CASE(wmenu)
 		END IF
 		row_num(10)=15
 
-		WRITE(Lnum_miss,10) num_miss
-		string(11)='☢  Missile [3 Points]: ' // Lnum_miss
+		WRITE(Lnum_ordinance(3),10) num_ordinance(3)
+		string(11)='☢  Missile [3 Points]: ' // Lnum_ordinance(3)
 		length(11)=24
 		row_num(11)=16
 
@@ -756,28 +757,28 @@ menu_selector: SELECT CASE(wmenu)
 		length(2)=42;	row_num(2)=5
 
 		IF ((manim .EQV. .TRUE.).AND.(wchoice==1)) THEN
-			string(3)='(1) Shoot: ' // shoot // '→ _'
+			string(3)='(1) Shoot: ' // control(1,1) // '→ _'
 			length(3)=15
 		ELSE
-			string(3)='(1) Shoot: ' // shoot
+			string(3)='(1) Shoot: ' // control(1,1)
 			length(3)=12
 		END IF
 		row_num(3)=7
 
 		IF ((manim .EQV. .TRUE.).AND.(wchoice==2)) THEN
-			string(4)='(2) Right: ' // right // '→ _'
+			string(4)='(2) Right: ' // control(1,2) // '→ _'
 			length(4)=15
 		ELSE
-			string(4)='(2) Right: ' // right
+			string(4)='(2) Right: ' // control(1,2)
 			length(4)=12
 		END IF
 		row_num(4)=8
 
 		IF ((manim .EQV. .TRUE.).AND.(wchoice==3)) THEN
-			string(5)='(3) Left: ' // left // '→ _'
+			string(5)='(3) Left: ' // control(1,3) // '→ _'
 			length(5)=14
 		ELSE
-			string(5)='(3) Left: ' // left
+			string(5)='(3) Left: ' // control(1,3)
 			length(5)=11
 		END IF
 		row_num(5)=9
@@ -787,28 +788,28 @@ menu_selector: SELECT CASE(wmenu)
 		row_num(6)=11
 
 		IF ((manim .EQV. .TRUE.).AND.(wchoice==4)) THEN
-			string(7)='(4) Scattershot: ' // scattershot // '→ _'
+			string(7)='(4) Scattershot: ' // control(2,1) // '→ _'
 			length(7)=21
 		ELSE
-			string(7)='(4) Scattershot: ' // scattershot
+			string(7)='(4) Scattershot: ' // control(2,1)
 			length(7)=18
 		END IF
 		row_num(7)=12
 
 		IF ((manim .EQV. .TRUE.).AND.(wchoice==5)) THEN
-			string(8)='(5) Vaporizer: ' // vaporizer // '→ _'
+			string(8)='(5) Vaporizer: ' // control(2,2) // '→ _'
 			length(8)=19
 		ELSE
-			string(8)='(5) Vaporizer: ' // vaporizer
+			string(8)='(5) Vaporizer: ' // control(2,2)
 			length(8)=16
 		END IF
 		row_num(8)=13
 
 		IF ((manim .EQV. .TRUE.).AND.(wchoice==6)) THEN
-			string(9)='(6) Missile: ' // missile // '→ _'
+			string(9)='(6) Missile: ' // control(2,3) // '→ _'
 			length(9)=17
 		ELSE
-			string(9)='(6) Missile: ' // missile
+			string(9)='(6) Missile: ' // control(2,3)
 			length(9)=14
 		END IF
 		row_num(9)=14
@@ -1156,7 +1157,7 @@ menu_selector: SELECT CASE(wmenu)
 		string(1)='Gunner'
 		length(1)=6;	row_num(1)=3
 
-		string(2)='ℵ'
+		string(2)='⇼'
 		length(2)=1;	row_num(2)=4
 
 		string(3)='2x♥    110x✪'
