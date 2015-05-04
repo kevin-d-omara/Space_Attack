@@ -20,7 +20,7 @@ PROGRAM array_invaders
 !	>gfortran -fopenmp sys_keyin.o graphics_sub.o primaries_sub.o lose_animation.o Space_Attack.o
 !	>./a.out	=) enjoy!
 !
-! Latest Version: 1.9.3
+! Latest Version: 1.9.4
 !
 !	Changelog:
 !		//(1.0.0) //02/25/15 	created
@@ -47,8 +47,12 @@ PROGRAM array_invaders
 !					added special ordinance ammo counters to play screen & added combination animation &
 !					added last wave / victory animations
 !					added + playtested Endless gametype
+!		//(1.9.4) //05/04/15	added cool Metal Slug style scoring screen
+!					!NOTE: BUG with finalscore -> grading scramble
+!					!TO DO: at scoring screen offer: High Score Table, Play Again, Exit Game
 !
 !				TO DO:	save game (high score); optimize timing so game runs smoothly, optimize forcefield destruction
+!				BUGS:	!!!final score scrambled between final score and grading!!!
 !				BUGS:	forcefield destruction doesn't always work right(?)
 !				BONUS: 2-player vs. computer AND 1 vs. 1 (alien overlord spawning invaders!!!)
 !
@@ -58,16 +62,17 @@ PROGRAM array_invaders
 	IMPLICIT NONE
 	INTEGER, PARAMETER :: row=19, col=15	!#rows must be = 4N+3 for code to work // (X-3)/4=N
 	INTEGER :: endgame, x00, i, j, k, h, frame, charge, updown, shots, kills, hits, dframe, limit, difficulty
-	INTEGER ::  score, wincon, wave, buffer, last, length(row), row_num(row), lives, eplaser, flop, score2
-	INTEGER :: tcounter, mcount, dcount, yesno=1, wchoice, total, ordinancepoints, gcounter
-	INTEGER :: num_ordinance(5), spawn(21)
+	INTEGER ::  score, wincon, wave, last, length(row), row_num(row), lives, eplaser, flop, score2
+	INTEGER :: tcounter, mcount, dcount, yesno=1, wchoice, total, ordinancepoints, gcounter, difficulty_hold
+	INTEGER :: num_ordinance(5), spawn(21), int_addcounter, maxgrade, ptime, pcount, finalscore
 	INTEGER, DIMENSION (row,col) :: animation, invader, laser, elaser, powerup
-	REAL :: start, finish, rate(8)
+	REAL :: start, finish, rate(8), float_addcounter, accuracy_mod, difficulty_mod, accuracy
 	CHARACTER(1) ::	command, gcommand		 !C(LEN=1) == C(1) == C
 	CHARACTER(1), DIMENSION(2,5) :: control
 	CHARACTER(3*col), DIMENSION(row) :: string
 	CHARACTER(10) :: wmenu, gametype
-	LOGICAL :: multiplier, damageboost, entercommand, manim, rblank, cheat(5), select_spawn
+	LOGICAL :: multiplier, damageboost, entercommand, manim, rblank, cheat(5), select_spawn, firstshow
+	LOGICAL, DIMENSION(2,13) :: wshow
 
 !------------------------------------------------------------------------------------------!
 !----------BEGIN GAME----------BEGIN GAME----------BEGIN GAME----------BEGIN GAME----------!
@@ -78,14 +83,14 @@ DO WHILE(yesno==1)	!GAME START
 	DO WHILE ((wmenu/='START!').AND.(wmenu/='EXIT'))	!MENU SEQUENCE					!!select menu and load strings
 		CALL select_menu(string,length,row_num,last,row,col,wmenu,wchoice,manim,control,&
 					difficulty,gametype,num_ordinance,total,ordinancepoints,lives,cheat)
-		CALL print_menu(row,col,string,buffer,length,row_num,last)		!print menu to screen
+		CALL print_menu(row,col,string,length,row_num,last)		!print menu to screen
 		IF (manim .EQV. .TRUE.) THEN						!IF menu animated
-			CALL ctimer()									!determine which option was selected
+			CALL ctimer()						!determine which option was selected
 			CALL which_option(command,wchoice,wmenu,manim,rblank,control,difficulty,&
 						gametype,num_ordinance,total,ordinancepoints,yesno,lives,cheat)
 			CALL select_menu(string,length,row_num,last,row,col,wmenu,wchoice,manim,control,&
 						difficulty,gametype,num_ordinance,total,ordinancepoints,lives,cheat)
-			CALL print_menu(row,col,string,buffer,length,row_num,last)
+			CALL print_menu(row,col,string,length,row_num,last)
 		END IF
 		IF ((wmenu/='START!').AND.(wmenu/='EXIT')) THEN
 			IF (rblank .EQV. .FALSE.) THEN
@@ -99,7 +104,8 @@ DO WHILE(yesno==1)	!GAME START
 	END DO				!END MENU SEQUENCE
 	IF (yesno==0) GOTO 10	!Exit Program
 	CALL initialize(invader,elaser,laser,powerup,animation,x00,row,col,endgame,frame,charge,updown,shots,hits,kills,score,wave,lives,&
-		multiplier,tcounter,mcount,dcount,entercommand,command,difficulty,cheat,rate,limit,gcounter,select_spawn,spawn,gametype)
+		multiplier,tcounter,mcount,dcount,entercommand,command,difficulty,cheat,rate,limit,gcounter,select_spawn,spawn,gametype,&
+														difficulty_hold)
 	CALL printscreen(row,col,animation,invader,gcommand,frame,charge,updown,score,wave,lives,control,&
 						dframe,endgame,multiplier,damageboost,tcounter,mcount,dcount,limit,num_ordinance)
 
@@ -125,14 +131,13 @@ DO WHILE(yesno==1)	!GAME START
 		DO WHILE (frame<4)		!3 Frame Animation.
 			CALL printscreen(row,col,animation,invader,gcommand,frame,charge,&
 		updown,score,wave,lives,control,dframe,endgame,multiplier,damageboost,tcounter,mcount,dcount,limit,num_ordinance)
-			CALL ctimer()		!Timer to allow a pause between frames.
+			CALL ctimer()	!Timer to allow a pause between frames.
 			frame=frame+1
 		END DO
 		frame=1; !reset frame count
 		IF (gametype=='Endless') CALL gauntlet(row,col,invader,powerup,spawn,select_spawn,gcounter,x00,rate)
 		CALL win_condition(invader,elaser,laser,powerup,x00,row,col,charge,updown,wave,endgame,lives,animation,gcommand,&
-			frame,score,dframe,multiplier,damageboost,tcounter,mcount,dcount,limit,control,num_ordinance,gametype,rate)
-
+		frame,score,dframe,multiplier,damageboost,tcounter,mcount,dcount,limit,control,num_ordinance,gametype,rate)
 		IF (endgame==0) THEN					!Begin Lose Animation
 			dframe=0
 			frame=3		!to freeze final positions
@@ -158,8 +163,26 @@ DO WHILE(yesno==1)	!GAME START
 				!Else EXIT LOOP
 	!$OMP END SECTIONS
 !$OMP END PARALLEL
-
-	CALL write_winlose_sequence(yesno,kills,shots,hits,score,endgame,wmenu,difficulty,num_ordinance)
+	!Win/Lose Sequence
+	CALL init_winlose_sequence(kills,shots,hits,score,difficulty,finalscore,difficulty_hold,accuracy,&
+				accuracy_mod,difficulty_mod,float_addcounter,wshow,int_addcounter,ptime,pcount,firstshow)
+	DO WHILE (wshow(1,13) .EQV. .FALSE.)
+		CALL which_show(wshow,int_addcounter,float_addcounter,kills,shots,hits,score,difficulty,finalscore,&
+									accuracy,accuracy_mod,difficulty_mod,ptime,pcount)
+		CALL select_wshow(row,col,string,length,row_num,last,wshow,int_addcounter,float_addcounter,kills,shots,&
+						hits,score,difficulty,finalscore,accuracy,accuracy_mod,difficulty_mod,endgame,maxgrade)
+		CALL print_menu(row,col,string,length,row_num,last)		!print menu to screen
+		DO WHILE (pcount<ptime)
+			pcount=pcount+1
+			CALL ctimerfast()
+		END DO
+		pcount=0
+		IF (firstshow .EQV. .TRUE.) THEn
+			firstshow=.FALSE.
+			wshow(1,1)=.TRUE.
+		END IF
+	END DO
+	yesno=0
 	command='p'	!if the player decides to play again this prevents a pre-set first command
 
 10 END DO
@@ -177,11 +200,12 @@ END PROGRAM array_invaders
 
 !--------Initialize positions--------Initialize Positions--------Initialize positions--------Initialize Positions--------
 SUBROUTINE initialize(invader,elaser,laser,powerup,animation,x00,row,col,endgame,frame,charge,updown,shots,hits,kills,score,&
-wave,lives,multiplier,tcounter,mcount,dcount,entercommand,command,difficulty,cheat,rate,limit,gcounter,select_spawn,spawn,gametype)
+wave,lives,multiplier,tcounter,mcount,dcount,entercommand,command,difficulty,cheat,rate,limit,gcounter,select_spawn,spawn,gametype,&
+														difficulty_hold)
 	IMPLICIT NONE
 	REAL ::  rate(8)
 	INTEGER :: x00, endgame, frame, charge, updown, shots, hits, kills, score, wave, lives, i, j, tcounter, mcount, dcount
-	INTEGER :: limit, difficulty, gcounter, spawn(21)
+	INTEGER :: limit, difficulty, gcounter, spawn(21), difficulty_hold
 	INTEGER, intent(in) :: row, col
 	INTEGER, DIMENSION (row,col) :: invader, elaser, laser, powerup, animation
 	LOGICAL :: multiplier, entercommand, cheat(5), select_spawn
@@ -220,14 +244,17 @@ rate=1		!Set Rates:
 	rate(8)=0.0126	!1/20 (/4)	Mothership	Spawn
 
 IF (difficulty==1) THEN		!Normal				!Apply difficulty modifiers
+	difficulty_hold=1
 	lives=2
 	limit=32	!powerup duration
 ELSE IF (difficulty==2) THEN	!Brutal
+	difficulty_hold=2
 	lives=1
 	limit=24
 	rate=rate*1.25	!125% rate
 	rate(1)=rate(1)*0.75/1.25
 ELSE				!Easy
+	difficulty_hold=3
 	lives=3
 	limit=40
 	rate=rate*0.75	!75% rate
@@ -658,50 +685,6 @@ SUBROUTINE init_random_seed()
 RETURN
 END
 
-!-------Write Win Sequence-------Write Win Sequence-------Write Win Sequence-------Write Win Sequence-------
-SUBROUTINE write_winlose_sequence(yesno,kills,shots,hits,score,endgame,wmenu,difficulty,num_ordinance)
-	IMPLICIT NONE
-	INTEGER :: yesno, kills, shots, hits, score, endgame, num_ordinance(5), difficulty
-	CHARACTER (LEN=10) :: wmenu
-
-call execute_command_line('clear')
-IF (endgame==0) THEN
-	WRITE (*,*) '☠ You lose!☠'
-ELSE
-	WRITE (*,*) '✰ You Win!✰'
-END IF
-WRITE(*,*) ''
-WRITE(*,6000) '❈ SHOTS:', shots
-WRITE(*,6000) '☄ HITS:', hits
-WRITE(*,6001) '⌖ ACCURACY:', FLOAT(hits)/FLOAT(shots)*100., '%'	!⌖
-WRITE(*,6000) '☠ KILLS:', kills
-WRITE(*,6002) '✪ SCORE:', score
-WRITE(*,*) ''
-IF (endgame==0) THEN
-	WRITE (*,*) 'Try again? Yes=1 No=0'
-ELSE
-	WRITE (*,*) 'Kick ass again? Yes=1 No=0'
-END IF
-READ(*,*) yesno
-
-IF (yesno==1) THEN
-	wmenu='Prep'	!Flag Prepare to Fight menu
-	IF (difficulty==1) THEN			!Reset special ordinance
-		num_ordinance(1)=2; num_ordinance(2)=2; num_ordinance(3)=1
-	ELSE IF (difficulty==2) THEN
-		num_ordinance(1)=0; num_ordinance(2)=0; num_ordinance(3)=1
-	ELSE
-		num_ordinance(1)=2; num_ordinance(2)=2; num_ordinance(3)=3
-	END IF
-END IF
-
-6000 FORMAT(A,I3.3)
-6001 FORMAT(A,F4.1,A)
-6002 FORMAT(A,I5.5)
-
-RETURN
-END SUBROUTINE write_winlose_sequence
-
 !-------Win Condition-------Win Condition-------Win Condition-------Win Condition-------Win Condition-------
 SUBROUTINE win_condition(invader,elaser,laser,powerup,x00,row,col,charge,updown,wave,endgame,lives,&
 animation,gcommand,frame,score,dframe,multiplier,damageboost,tcounter,mcount,dcount,limit,control,num_ordinance,gametype,rate)
@@ -951,3 +934,62 @@ END IF
 
 RETURN
 END SUBROUTINE turn_start
+
+!-------Write Win Sequence-------Write Win Sequence-------Write Win Sequence-------Write Win Sequence-------
+SUBROUTINE init_winlose_sequence(kills,shots,hits,score,difficulty,finalscore,difficulty_hold,accuracy,&
+				accuracy_mod,difficulty_mod,float_addcounter,wshow,int_addcounter,ptime,pcount,firstshow)
+	IMPLICIT NONE
+	INTEGER :: kills, shots, hits, score, difficulty, finalscore, accuracy_int, difficulty_hold, maxgrade
+	REAL :: accuracy, accuracy_mod, difficulty_mod, float_addcounter
+	LOGICAL, DIMENSION(2,13) :: wshow
+	LOGICAL :: firstshow
+	INTEGER :: int_addcounter, ptime, pcount
+
+wshow=.FALSE.		!first row determines which showing is being animated
+!wshow(1,1)=.FALSE.	!second row determines which showings are static with full
+firstshow=.TRUE.	!set to first showing
+int_addcounter=0	!set integer adding counter to 0
+float_addcounter=0.	!set float adding counter to 0
+ptime=60		!set starting number of pauses
+pcount=0		!set pause count to 0
+maxgrade=5000		!set upper bound for an A+ grade
+
+IF (difficulty_hold==0) THEN	!Difficulty Modifier
+	difficulty=0			!Set Difficulty = 0
+	difficulty_mod=0.75		!Easy = 75%
+
+ELSE IF (difficulty_hold==1) THEN
+	difficulty=1			!Set Difficulty = 1
+	difficulty_mod=1.00		!Normal = 100%
+
+ELSE
+	difficulty=2			!Set Difficulty = 2
+	difficulty_mod=1.25		!Brutal = 125%
+END IF
+
+accuracy = FLOAT(hits)/FLOAT(shots)*100.	!Accuracy
+accuracy_int=INT(accuracy)-MOD(INT(accuracy),5)	!Accuracy rounded down to nearest 5
+
+IF (accuracy_int>80) THEN		!Accuracy Modifier
+	accuracy_mod=FLOAT(accuracy_int)/100.+0.2
+ELSE IF (accuracy_int<65) THEN
+	accuracy_mod=FLOAT(accuracy_int)/100.+0.35
+ELSE
+	accuracy_mod=1.00
+END IF
+
+finalscore = score*accuracy_mod*difficulty_mod	!Final Score
+
+!IF (yesno==1) THEN
+!	wmenu='Prep'	!Flag Prepare to Fight menu
+!	IF (difficulty==1) THEN			!Reset special ordinance
+!		num_ordinance(1)=2; num_ordinance(2)=2; num_ordinance(3)=1
+!	ELSE IF (difficulty==2) THEN
+!		num_ordinance(1)=0; num_ordinance(2)=0; num_ordinance(3)=1
+!	ELSE
+!		num_ordinance(1)=2; num_ordinance(2)=2; num_ordinance(3)=3
+!	END IF
+!END IF
+
+RETURN
+END SUBROUTINE init_winlose_sequence

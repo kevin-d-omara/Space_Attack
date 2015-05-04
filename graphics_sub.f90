@@ -722,7 +722,7 @@ END SUBROUTINE wcharge_idle
 ! is determined by counting the extra rows needed to display LIVES/SCORE, WEAPON CHARGE,
 ! and the Win/Lose statement during gameplay.  The "*3" is because each column value is
 ! allotted 3 columns for printing.
-SUBROUTINE print_menu(row,col,string,buffer,length,row_num,last)
+SUBROUTINE print_menu(row,col,string,length,row_num,last)
 IMPLICIT NONE
 INTEGER :: buffer, length(row), row_num(row), last, i, j , k
 INTEGER, intent(in) :: row, col

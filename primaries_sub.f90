@@ -42,7 +42,7 @@ SUBROUTINE gauntlet(row,col,invader,powerup,spawn,select_spawn,gcounter,x00,rate
 
 IF (select_spawn .EQV. .TRUE.) THEN		!select spawn package
 	CALL random_number(u)
-	IF (u<0.0451) THEN 	!1/25	4% chance to spawn package		!switch to rate(1)
+	IF (u>.95+.41*rate(1)) THEN 	!1/25	4% chance to spawn package (3.5% Easy & 4.5% Brutal)
 		CALL random_number(v)
 		v_int=100*v
 		package: SELECT CASE(v_int)
@@ -145,7 +145,7 @@ ELSE						!spawning sequence
 END IF
 
 CALL random_number(u)
-IF (u<rate(1)/2) powerup(2,1)=202		!1/82 Normal powerup chance
+IF (u<rate(1)/2) powerup(2,1)=202		!1/82 Normal powerup chance (1/62 Easy & 1/103 Brutal
 
 RETURN
 END SUBROUTINE gauntlet

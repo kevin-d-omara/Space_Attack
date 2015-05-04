@@ -1,5 +1,6 @@
 ! This block initializes all the relevant variables before loading the menu sequence.
-SUBROUTINE menu_initialize(wmenu,wchoice,endgame,manim,rblank,control,difficulty,gametype,num_ordinance,ordinancepoints,yesno,cheat)
+SUBROUTINE menu_initialize(wmenu,wchoice,endgame,manim,rblank,control,difficulty,gametype,num_ordinance,ordinancepoints,&
+													yesno,cheat)
 	IMPLICIT NONE
 	CHARACTER(10) :: wmenu, gametype
 	CHARACTER(1), DIMENSION(2,5) ::	control
@@ -527,8 +528,8 @@ menu_selector: SELECT CASE(wmenu)
 		string(7)='If you have not already done so, please exit'
 		length(7)=44;	row_num(7)=12
 
-		string(8)='and type: export OMP_NUM_THREADS=16'
-		length(8)=35;	row_num(8)=13
+		string(8)='and type: export OMP_NUM_THREADS=2'
+		length(8)=34;	row_num(8)=13
 
 		string(9)='Press any key to continue.'
 		length(9)=26;	row_num(9)=15
@@ -1437,3 +1438,399 @@ menu_selector: SELECT CASE(wmenu)
 
 RETURN
 END SUBROUTINE select_menu
+
+! ------- Which Show ------- Which Show ------- Which Show ------- Which Show -------
+! This block is used to flag which scorings are shown and which aren't.  It also handles the rapid counting
+! of points to simulate scrolling up to the scoring.
+SUBROUTINE which_show(wshow,int_addcounter,float_addcounter,kills,shots,hits,score,difficulty,finalscore,&
+								accuracy,accuracy_mod,difficulty_mod,ptime,pcount)
+	IMPLICIT NONE
+	LOGICAL, DIMENSION(2,13) :: wshow
+	INTEGER :: k, int_addcounter, ptime, pcount
+	INTEGER :: kills, shots, hits, score, difficulty, finalscore
+	REAL :: float_addcounter, accuracy, accuracy_mod, difficulty_mod
+
+k=1
+DO WHILE (wshow(1,k) .EQV. .TRUE.)	!bring k up to proper index
+k=k+1
+END DO
+
+g_wshow: SELECT CASE(k-1)
+	CASE(1)							!❈ SHOTS:
+		IF (int_addcounter<shots) THEN
+			ptime=3			!set number of pauses to 1
+			IF (int_addcounter+2<shots) THEN
+				int_addcounter=int_addcounter+2	!increase counter for printing
+			ELSE
+				int_addcounter=shots
+				ptime=25		!set number of pauses to 10
+			END IF
+		ELSE
+			int_addcounter=0	!reset counter to prime for next showing
+			float_addcounter=0.
+			wshow(1,k)=.TRUE.	!flag next showing
+			wshow(2,k-1)=.TRUE.	!flag static full current
+		END IF
+	CASE(2)							!☄ HITS:
+		IF (int_addcounter<hits) THEN
+			ptime=3
+			IF (int_addcounter+2<shots) THEN
+				int_addcounter=int_addcounter+2
+			ELSE
+				int_addcounter=hits
+				ptime=25
+			END IF
+		ELSE
+			int_addcounter=0
+			float_addcounter=0.
+			wshow(1,k)=.TRUE.
+			wshow(2,k-1)=.TRUE.
+		END IF
+	CASE(3)							!⌖ ACCURACY:
+		IF (float_addcounter<accuracy) THEN
+			ptime=3
+			IF (float_addcounter+5<accuracy) THEN
+				float_addcounter=float_addcounter+5.
+			ELSE
+				float_addcounter=accuracy
+				ptime=25
+			END IF
+		ELSE
+			int_addcounter=0
+			float_addcounter=0.
+			wshow(1,k)=.TRUE.
+			wshow(2,k-1)=.TRUE.
+		END IF
+	CASE(4)							!☠ KILLS:
+		IF (int_addcounter<kills) THEN
+			ptime=3
+			IF (int_addcounter+2<kills) THEN
+				int_addcounter=int_addcounter+2
+			ELSE
+				int_addcounter=kills
+				ptime=25
+			END IF
+		ELSE
+			int_addcounter=0
+			float_addcounter=0.
+			wshow(1,k)=.TRUE.
+			wshow(2,k-1)=.TRUE.
+		END IF
+	CASE(5)							!✪ SCORE:
+		IF (int_addcounter<score) THEN
+			ptime=1
+			IF (int_addcounter+25<score) THEN
+				int_addcounter=int_addcounter+25
+			ELSE
+				int_addcounter=score
+				ptime=35
+			END IF
+		ELSE
+			int_addcounter=0
+			float_addcounter=0.
+			wshow(1,k)=.TRUE.
+			wshow(2,k-1)=.TRUE.
+		END IF
+	CASE(6)							!╳
+		wshow(1,k)=.TRUE.
+		wshow(2,k-1)=.TRUE.	
+	CASE(7)							!⌖ ACCURACY MOD:
+		IF (float_addcounter<accuracy_mod) THEN
+			ptime=3
+			IF (float_addcounter+0.1<accuracy_mod) THEN
+				float_addcounter=float_addcounter+0.1
+			ELSE
+				float_addcounter=accuracy_mod
+				ptime=35
+			END IF
+		ELSE
+			int_addcounter=0
+			float_addcounter=0.
+			wshow(1,k)=.TRUE.
+			wshow(2,k-1)=.TRUE.
+		END IF
+	CASE(8)							!╳
+		wshow(1,k)=.TRUE.
+		wshow(2,k-1)=.TRUE.
+	CASE(9)							!⌖☠ DIFFICULTY MOD:
+		IF (float_addcounter<difficulty_mod) THEN
+			ptime=3
+			IF (float_addcounter+0.1<difficulty_mod) THEN
+				float_addcounter=float_addcounter+0.1
+			ELSE
+				float_addcounter=difficulty_mod
+				ptime=35
+			END IF
+		ELSE
+			int_addcounter=0
+			float_addcounter=0.
+			wshow(1,k)=.TRUE.
+			wshow(2,k-1)=.TRUE.
+		END IF
+	CASE(10)						!═
+		wshow(1,k)=.TRUE.
+		wshow(2,k-1)=.TRUE.
+	CASE(11)						!✪ FINAL SCORE:
+		IF (int_addcounter<finalscore) THEN
+			ptime=1
+			IF (int_addcounter+15<finalscore) THEN
+				int_addcounter=int_addcounter+15
+			ELSE
+				int_addcounter=finalscore
+				ptime=50
+			END IF
+		ELSE
+			int_addcounter=0
+			float_addcounter=0.
+			wshow(1,k)=.TRUE.
+			wshow(2,k-1)=.TRUE.
+		END IF
+	CASE(12)
+		wshow(1,k)=.TRUE.
+		wshow(2,k-1)=.TRUE.
+	CASE DEFAULT
+		ptime=30	
+	END SELECT g_wshow
+
+RETURN
+END SUBROUTINE which_show
+
+!------- SELECT MENU ------- SELECT MENU ------- SELECT MENU -------
+! This block is used to load the appropriate strings before printing.  It uses "wmenu"
+! and "wchoice" to determine the correct strings to load.
+SUBROUTINE select_wshow(row,col,string,length,row_num,last,wshow,int_addcounter,float_addcounter,kills,shots,&
+				hits,score,difficulty,finalscore,accuracy,accuracy_mod,difficulty_mod,endgame,maxgrade)
+	IMPLICIT NONE
+	CHARACTER(3*col), DIMENSION(row) :: string
+	CHARACTER(LEN=5) :: Lint_addcounter
+	CHARACTER(LEN=16) :: Lgrading
+	INTEGER, intent(in) :: row, col
+	INTEGER :: length(row), row_num(row), last, grading, maxgradedivision, maxgrade, k
+	LOGICAL, DIMENSION(2,13) :: wshow
+	INTEGER :: int_addcounter, kills, shots, hits, score, difficulty, finalscore, endgame
+	REAL :: float_addcounter, accuracy, accuracy_mod, difficulty_mod
+
+k=1
+!	CASE('WinLose')		!Win/Lose Screen
+		IF (endgame==0) THEN
+			string(k)='☠ You lose!☠'
+			length(k)=12
+		ELSE
+			string(k)='✰ You Win!✰'
+			length(k)=11
+		END IF
+		row_num(k)=3; k=k+1
+
+
+		IF (wshow(1,1) .EQV. .FALSE.) THEN		!❈ SHOTS:
+			string(k)=''			!Blank row if not flagged for animation
+			length(k)=0
+		ELSE
+			IF (wshow(2,1) .EQV. .FALSE.) THEN	!flagged for animation
+				WRITE(Lint_addcounter,10) int_addcounter	!Convert int_addcounter to a string
+			ELSE
+				WRITE(Lint_addcounter,10) shots			!Convert shots to string
+			END IF
+			string(k)='❈ SHOTS:' // Lint_addcounter
+			length(k)=11
+		END IF
+		row_num(k)=5; k=k+1
+		10 FORMAT(I3.3)
+
+		IF (wshow(1,2) .EQV. .FALSE.) THEN		!☄ HITS:
+			string(k)=''
+			length(k)=0
+		ELSE
+			IF (wshow(2,2) .EQV. .FALSE.) THEN
+				WRITE(Lint_addcounter,10) int_addcounter
+			ELSE
+				WRITE(Lint_addcounter,10) hits
+			END IF
+			string(k)='☄ HITS:' // Lint_addcounter
+			length(k)=10
+		END IF
+		row_num(k)=6; k=k+1
+
+		IF (wshow(1,3) .EQV. .FALSE.) THEN		!⌖ ACCURACY:
+			string(k)=''
+			length(k)=0
+		ELSE
+			IF (wshow(2,3) .EQV. .FALSE.) THEN
+				WRITE(Lint_addcounter,20) float_addcounter
+			ELSE
+				WRITE(Lint_addcounter,20) accuracy
+			END IF
+			string(k)='⌖ ACCURACY:' // Lint_addcounter // '%'
+			length(k)=17
+		END IF
+		row_num(k)=7; k=k+1
+		20 FORMAT(F4.1)
+
+		IF (wshow(1,4) .EQV. .FALSE.) THEN		!☠ KILLS:
+			string(k)=''
+			length(k)=0
+		ELSE
+			IF (wshow(2,4) .EQV. .FALSE.) THEN
+				WRITE(Lint_addcounter,10) int_addcounter
+			ELSE
+				WRITE(Lint_addcounter,10) kills
+			END IF
+			string(k)='☠ KILLS:' // Lint_addcounter
+			length(k)=11
+		END IF
+		row_num(k)=8; k=k+1
+
+		IF ((wshow(1,4) .EQV. .TRUE.).AND.(wshow(2,4) .EQV. .TRUE.)) THEN
+			string(k)='-----------------------------------'
+			length(k)=35
+			string(k+1)=')()()()()()()()()()()()()()()()()('
+			length(k+1)=34
+			string(k+2)='-----------------------------------'
+			length(k+2)=35
+		ELSE
+			string(k:k+2)=''; length(k:k+2)=0
+		END IF
+		row_num(k)=9; row_num(k+1)=10; row_num(k+2)=11; k=k+3
+
+		IF (wshow(1,5) .EQV. .FALSE.) THEN		!✪ SCORE:
+			string(k)=''
+			length(k)=0
+		ELSE
+			IF (wshow(2,5) .EQV. .FALSE.) THEN
+				WRITE(Lint_addcounter,30) int_addcounter
+			ELSE
+				WRITE(Lint_addcounter,30) score
+			END IF
+			string(k)='✪ SCORE:' // Lint_addcounter
+			length(k)=13
+		END IF
+		row_num(k)=12; k=k+1
+		30 FORMAT(I5.5)
+
+		IF (wshow(1,6) .EQV. .FALSE.) THEN		!╳
+			string(k)=''
+			length(k)=0
+		ELSE
+			string(k)='╳'
+			length(k)=1
+		END IF
+		row_num(10)=13; k=k+1
+
+		IF (wshow(1,7) .EQV. .FALSE.) THEN		!⌖ ACCURACY MOD:
+			string(k)=''
+			length(k)=0
+		ELSE
+			IF (wshow(2,7) .EQV. .FALSE.) THEN
+				WRITE(Lint_addcounter,40) float_addcounter
+			ELSE
+				WRITE(Lint_addcounter,40) accuracy_mod
+			END IF
+			string(k)='⌖ ACCURACY MOD:' // Lint_addcounter
+			length(k)=19
+		END IF
+		row_num(k)=14; k=k+1
+		40 FORMAT(F4.2)
+
+		IF (wshow(1,8) .EQV. .FALSE.) THEN		!╳
+			string(k)=''
+			length(k)=0
+		ELSE
+			string(k)='╳'
+			length(k)=1
+		END IF
+		row_num(k)=15; k=k+1
+
+		IF (wshow(1,9) .EQV. .FALSE.) THEN		!☠ DIFFICULTY MOD:
+			string(k)=''
+			length(k)=0
+		ELSE
+			IF (wshow(2,9) .EQV. .FALSE.) THEN
+				WRITE(Lint_addcounter,40) float_addcounter
+			ELSE
+				WRITE(Lint_addcounter,40) difficulty_mod
+			END IF
+			string(k)='☠ DIFFICULTY MOD:' // Lint_addcounter
+			length(k)=21
+		END IF
+		row_num(k)=16; k=k+1
+
+		IF (wshow(1,10) .EQV. .FALSE.) THEN		!═
+			string(k)=''
+			length(k)=0
+		ELSE
+			string(k)='═'
+			length(k)=1
+		END IF
+		row_num(k)=17; k=k+1
+
+		IF (wshow(1,11) .EQV. .FALSE.) THEN		!✪ FINAL SCORE:
+			string(k)=''
+			length(k)=0
+		ELSE
+			IF (wshow(2,11) .EQV. .FALSE.) THEN
+				WRITE(Lint_addcounter,30) int_addcounter
+			ELSE
+				WRITE(Lint_addcounter,30) finalscore
+			END IF
+			string(k)='✪ FINAL SCORE:' // Lint_addcounter
+			length(k)=19
+		END IF
+		row_num(k)=18; k=k+1
+
+		IF (wshow(1,12) .EQV. .FALSE.) THEN		!RANKING:
+			string(k)=''
+			length(k)=0
+		ELSE
+			maxgradedivision=maxgrade/24
+			IF (finalscore<maxgrade/2) THEN
+				Lgrading='F     Failure ✖'
+				grading=9
+			ELSE IF (finalscore<maxgrade-maxgradedivision*11) THEN
+				Lgrading='D-    Defeated'
+				grading=8
+			ELSE IF (finalscore<maxgrade-maxgradedivision*10) THEN
+				Lgrading='D     Deadbeat'
+				grading=8
+			ELSE IF (finalscore<maxgrade-maxgradedivision*9) THEN
+				Lgrading='D+    Deficient'
+				grading=9
+			ELSE IF (finalscore<maxgrade-maxgradedivision*8) THEN
+				Lgrading='C-    Cruddy'
+				grading=6
+			ELSE IF (finalscore<maxgrade-maxgradedivision*7) THEN
+				Lgrading='C     Crummy'
+				grading=6
+			ELSE IF (finalscore<maxgrade-maxgradedivision*6) THEN
+				Lgrading='C+    Common'
+				grading=6
+			ELSE IF (finalscore<maxgrade-maxgradedivision*5) THEN
+				Lgrading='B-    Bravo!'
+				grading=6
+			ELSE IF (finalscore<maxgrade-maxgradedivision*4) THEN
+				Lgrading='B     Boss!'
+				grading=5
+			ELSE IF (finalscore<maxgrade-maxgradedivision*3) THEN
+				Lgrading='B+    Brilliant!'
+				grading=10
+			ELSE IF (finalscore<maxgrade-maxgradedivision*2) THEN
+				Lgrading='A-    Adept‼'
+				grading=6
+			ELSE IF (finalscore<maxgrade-maxgradedivision*1) THEN
+				Lgrading='A     Awesome‼'
+				grading=8
+			ELSE IF (finalscore<maxgrade) THEN
+				Lgrading='A+    Ace‼' 
+				grading=4
+			ELSE
+				Lgrading='S     Super‼'
+				grading=6
+			END IF
+			string(k)=Lgrading
+			length(k)=6+grading
+		END IF
+		row_num(k)=19; k=k+1
+
+		last=k-1
+
+RETURN
+END SUBROUTINE select_wshow
