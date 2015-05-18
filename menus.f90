@@ -1,11 +1,11 @@
 ! This block initializes all the relevant variables before loading the menu sequence.
 SUBROUTINE menu_initialize(wmenu,wchoice,endgame,manim,rblank,control,difficulty,gametype,num_ordinance,ordinancepoints,&
-													yesno,cheat)
+												yesno,cheat,naming)
 	IMPLICIT NONE
 	CHARACTER(10) :: wmenu, gametype
 	CHARACTER(1), DIMENSION(2,5) ::	control
 	INTEGER :: wchoice, endgame, ordinancepoints, yesno, num_ordinance(5), difficulty
-	LOGICAL :: rblank, manim, cheat(5)
+	LOGICAL :: rblank, manim, cheat(5), naming
 
 wmenu='Intro'	!set to intro screen
 wchoice=1	!set to default choice
@@ -13,6 +13,7 @@ endgame=0	!set to game off
 manim=.FALSE.	!set menu animation flag off
 rblank=.TRUE.	!set to read blank (i.e. press enter, no key required)
  cheat=.FALSE.	!set all chets to De-Active -> 1 = Year o' Plenty; 2 = Fiver
+naming=.FALSE.	!set naming high score to off
 control(1,1)='w'; control(1,2)='d'; control(1,3)='a'	!shoot; right; left
 control(2,1)='1'; control(2,2)='2'; control(2,3)='3'; control(2,4)='4'; control(2,5)='5'	!scatterhots; vaporizer; missile
 difficulty=1	!set difficulty -> 0 = Easy; 1 = Normal; 2 = Brutal
@@ -34,7 +35,7 @@ SUBROUTINE which_option(command,wchoice,wmenu,manim,rblank,control,difficulty,ga
 	CHARACTER(1) :: command
 	CHARACTER(1), DIMENSION(2,5) :: control
 	CHARACTER(10) :: wmenu, gametype
-	INTEGER :: wchoice, total, ordinancepoints, yesno, lives, num_ordinance(5), difficulty
+	INTEGER :: wchoice, total, ordinancepoints, yesno, lives, num_ordinance(5), difficulty, i, j
 	LOGICAL :: manim, rblank, cheat(5)
 
 option_selector: SELECT CASE(wmenu)
@@ -72,6 +73,14 @@ option_selector: SELECT CASE(wmenu)
 				wmenu='Guide_Main'!Guide_Main
 				manim=.FALSE.	!de-flag menu animation
 			END IF
+		ELSE IF (command=='4') THEN
+			IF (manim .EQV. .FALSE.) THEN
+				wchoice=4	!flag choice
+				manim=.TRUE.	!flag animation on
+			ELSE
+				wmenu='S_Standard'!Standard High Scores
+				manim=.FALSE.	!de-flag menu animation
+			END IF
 		ELSE IF (command=='7') THEN
 			IF (manim .EQV. .FALSE.) THEN
 				wchoice=7	!flag choice
@@ -89,7 +98,101 @@ option_selector: SELECT CASE(wmenu)
 				manim=.FALSE.	!de-flag menu animation
 				yesno=0		!Flag exit game loop
 			END IF
+		END IF	
+
+
+	CASE('S_Standard')
+		IF (command=='1') THEN
+			IF (manim .EQV. .FALSE.) THEN
+				wchoice=1	!flag choice
+				manim=.TRUE.	!flag animation on
+			ELSE
+				wmenu='S_Endless'!Endless High Scores
+				manim=.FALSE.	!de-flag menu animation
+			END IF
+		ELSE IF (command=='7') THEN
+			IF (manim .EQV. .FALSE.) THEN
+				wchoice=7	!flag choice
+				manim=.TRUE.	!flag animation on
+			ELSE
+				OPEN(unit=100, file='.scores_standard.dat', status='unknown')
+				DO i=1,10
+					DO j=1,6
+						reset_standard: SELECT CASE(j)
+							CASE(1)
+								WRITE(100,5001) '_______'
+							CASE(2)
+								WRITE(100,5001) '00000  '
+							CASE(3)
+								WRITE(100,5001) 'Easy   '
+							CASE(4)
+								WRITE(100,5001) '000    '
+							CASE(5)
+								WRITE(100,5001) '00.0%  '
+							CASE(6)
+								WRITE(100,5001) '00     '
+							END SELECT reset_standard
+							5001 FORMAT(A7)
+					END DO
+				END DO
+				CLOSE(100)
+				manim=.FALSE.	!de-flag menu animation
+			END IF
+		ELSE IF (command=='0') THEN
+			IF (manim .EQV. .FALSE.) THEN
+				wchoice=0	!flag choice
+				manim=.TRUE.	!flag animation on
+			ELSE
+				wmenu='Main'	!Main Menu
+				manim=.FALSE.	!de-flag menu animation
+			END IF
 		END IF
+
+	CASE('S_Endless')
+		IF (command=='1') THEN
+			IF (manim .EQV. .FALSE.) THEN
+				wchoice=1	!flag choice
+				manim=.TRUE.	!flag animation on
+			ELSE
+				wmenu='S_Standard'!Standard High Scores
+				manim=.FALSE.	!de-flag menu animation
+			END IF
+		ELSE IF (command=='7') THEN
+			IF (manim .EQV. .FALSE.) THEN
+				wchoice=7	!flag choice
+				manim=.TRUE.	!flag animation on
+			ELSE
+				OPEN(unit=200, file='.scores_endless.dat', status='unknown')
+				DO i=1,10
+					DO j=1,6
+						reset_endless: SELECT CASE(j)
+							CASE(1)
+								WRITE(200,5001) '_______'
+							CASE(2)
+								WRITE(200,5001) '00000  '
+							CASE(3)
+								WRITE(200,5001) 'Easy   '
+							CASE(4)
+								WRITE(200,5001) '000    '
+							CASE(5)
+								WRITE(200,5001) '00.0%  '
+							CASE(6)
+								WRITE(200,5001) '00     '
+							END SELECT reset_endless
+					END DO
+				END DO
+				CLOSE(200)
+				manim=.FALSE.	!de-flag menu animation
+			END IF
+		ELSE IF (command=='0') THEN
+			IF (manim .EQV. .FALSE.) THEN
+				wchoice=0	!flag choice
+				manim=.TRUE.	!flag animation on
+			ELSE
+				wmenu='Main'	!Main Menu
+				manim=.FALSE.	!de-flag menu animation
+			END IF
+		END IF		
 
 	CASE('Cheats')
 		IF (command=='1') THEN
@@ -209,8 +312,8 @@ option_selector: SELECT CASE(wmenu)
 		ELSE IF (command=='6') THEN
 			IF (manim .EQV. .FALSE.) THEN
 				wchoice=6	!flag choice
-				manim=.TRUE.	!flag animation on
-				IF (num_ordinance(2)<1+ordinancepoints/2) num_ordinance(2)=num_ordinance(2)+1	!+1 vaporizer			
+				manim=.TRUE.	!flag animation on					!+1 vaporizer
+				IF (num_ordinance(2)<1+ordinancepoints/2) num_ordinance(2)=num_ordinance(2)+1
 			ELSE
 				manim=.FALSE.	!de-flag menu animation
 			END IF
@@ -225,8 +328,8 @@ option_selector: SELECT CASE(wmenu)
 		ELSE IF (command=='8') THEN
 			IF (manim .EQV. .FALSE.) THEN
 				wchoice=8	!flag choice
-				manim=.TRUE.	!flag animation on
-				IF (num_ordinance(3)<ordinancepoints/3) num_ordinance(3)=num_ordinance(3)+1	!+1 missile			
+				manim=.TRUE.	!flag animation on					!+1 missile
+				IF (num_ordinance(3)<ordinancepoints/3) num_ordinance(3)=num_ordinance(3)+1
 			ELSE
 				manim=.FALSE.	!de-flag menu animation
 			END IF
@@ -490,102 +593,265 @@ END SUBROUTINE which_option
 ! This block is used to load the appropriate strings before printing.  It uses "wmenu"
 ! and "wchoice" to determine the correct strings to load.
 SUBROUTINE select_menu(string,length,row_num,last,row,col,wmenu,wchoice,manim,control,difficulty,gametype,&
-							num_ordinance,total,ordinancepoints,lives,cheat)
+				num_ordinance,total,ordinancepoints,lives,cheat,score_array,naming,ranking)
 	IMPLICIT NONE
+	CHARACTER(LEN=7), DIMENSION(11,6) :: score_array
 	CHARACTER(3*col), DIMENSION(row) :: string
+	CHARACTER(LEN=7) :: int_to_string, fullscore
 	CHARACTER(10) :: wmenu, gametype
 	CHARACTER(1), DIMENSION(2,5) :: control
 	CHARACTER(1), DIMENSION(5) :: Lnum_ordinance
 	CHARACTER(LEN=2) :: Ltotal, Lordinancepoints
 	INTEGER, intent(in) :: row, col
-	INTEGER :: length(row), row_num(row), last, wchoice, k, total, ordinancepoints, lives, num_ordinance(5), difficulty
-	LOGICAL :: manim, cheat(5)
+	INTEGER :: length(row), row_num(row), last, wchoice, k, h, total, ordinancepoints, lives
+	INTEGER :: i, j, num_ordinance(5), difficulty, ranking
+	LOGICAL :: manim, cheat(5), naming
 
+k=1
 menu_selector: SELECT CASE(wmenu)
 	CASE('Intro')		!INTRO
-		string(1)='♅  ♓  ☫  ⇼  ۞  ♑  ⋤  ↂ  ♅'
-		length(1)=25;	row_num(1)=3
+		string(k)='♅  ♓  ☫  ⇼  ۞  ♑  ⋤  ↂ  ♅'
+		length(k)=25;	row_num(k)=3; k=k+1
 
-		string(2)='♅     Space  Attack     ♅'
-		length(2)=25;	row_num(2)=4
+		string(k)='♅     Space  Attack     ♅'
+		length(k)=25;	row_num(k)=4; k=k+1
 
-		string(3)='♅  ↂ  ⋥  ♑  ۞  ⇼  ☫  ♓  ♅'
-		length(3)=25;	row_num(3)=5
+		string(k)='♅  ↂ  ⋥  ♑  ۞  ⇼  ☫  ♓  ♅'
+		length(k)=25;	row_num(k)=5; k=k+1
 
 		IF (manim .EQV. .FALSE.) THEN
-			string(4)='✭  ✭  ✭  ✭  ✭  ✭  ✭  ✭  ✭'
+			string(k)='✭  ✭  ✭  ✭  ✭  ✭  ✭  ✭  ✭'
 		ELSE
-			string(4)='✰  ✰  ✰  ✰  ✰  ✰  ✰  ✰  ✰'
+			string(k)='✰  ✰  ✰  ✰  ✰  ✰  ✰  ✰  ✰'
 		END IF
-		length(4)=25;	row_num(4)=7
+		length(k)=25;	row_num(k)=7; k=k+1
 
-		string(5)='Please adjust the height of your terminal to'
-		length(5)=44;	row_num(5)=9
+		string(k)='Please adjust the height of your terminal to'
+		length(k)=44;	row_num(k)=9; k=k+1
 
-		string(6)='fit the border now.'
-		length(6)=19;	row_num(6)=10
+		string(k)='fit the border now.'
+		length(k)=19;	row_num(k)=10; k=k+1
 
-		string(7)='If you have not already done so, please exit'
-		length(7)=44;	row_num(7)=12
+		string(k)='If you have not already done so, please exit'
+		length(k)=44;	row_num(k)=12; k=k+1
 
-		string(8)='and type: export OMP_NUM_THREADS=2'
-		length(8)=34;	row_num(8)=13
+		string(k)='and type: export OMP_NUM_THREADS=2'
+		length(k)=34;	row_num(k)=13; k=k+1
 
-		string(9)='Press any key to continue.'
-		length(9)=26;	row_num(9)=15
+		string(k)='YOU MUST PRESS ENTER AFTER EVERY COMMAND'
+		length(k)=40;	row_num(k)=15; k=k+1
 
-		string(10)="by Kevin O'Mara"
-		length(10)=15;	row_num(10)=20
+		string(k)='Press any key to continue.'
+		length(k)=26;	row_num(k)=17; k=k+1
 
-		string(11)='version 1.9.1'
-		length(11)=13;	row_num(11)=row+3
+		string(k)="by Kevin O'Mara"
+		length(k)=15;	row_num(k)=20; k=k+1
 
-		last=11
+		string(k)='version 1.9.5'
+		length(k)=13;	row_num(k)=row+3; k=k+1
+
+		last=k-1
 
 	CASE('Main')		!MAIN
-		string(1)='⋲     MAIN MENU     ⋺'
-		length(1)=21;	row_num(1)=3
+		string(k)='⋲     MAIN MENU     ⋺'
+		length(k)=21;	row_num(k)=3; k=k+1
 
-		string(2)='♅  ♓  ♃  ♄  ☫  ♑  ♇  ☿  ♅'
-		length(2)=25;	row_num(2)=5
+		string(k)='♅  ♓  ♃  ♄  ☫  ♑  ♇  ☿  ♅'
+		length(k)=25;	row_num(k)=5; k=k+1
 
 		IF ((manim .EQV. .TRUE.).AND.(wchoice==1)) THEN
-			string(3)='✰ ✰ ✰ ✰ (1) PLAY! ✰ ✰ ✰ ✰'
-			length(3)=25
+			string(k)='✰ ✰ ✰ ✰ (1) PLAY! ✰ ✰ ✰ ✰'
+			length(k)=25
 		ELSE
-			string(3)='(1) PLAY!'
-			length(3)=9
+			string(k)='(1) PLAY!'
+			length(k)=9
 		END IF
-		row_num(3)=7
+		row_num(k)=7; k=k+1
 
 		IF ((manim .EQV. .TRUE.).AND.(wchoice==2)) THEN
-			string(4)='✰ ✰ ✰ ✰ (2) Controls ✰ ✰ ✰ ✰'
-			length(4)=28
+			string(k)='✰ ✰ ✰ ✰ (2) Controls ✰ ✰ ✰ ✰'
+			length(k)=28
 		ELSE
-			string(4)='(2) Controls'
-			length(4)=12
+			string(k)='(2) Controls'
+			length(k)=12
 		END IF
-		row_num(4)=9
+		row_num(k)=9; k=k+1
 
 		IF ((manim .EQV. .TRUE.).AND.(wchoice==3)) THEN
-			string(5)='✰ ✰ ✰ ✰ (3) Guide ✰ ✰ ✰ ✰'
-			length(5)=25
+			string(k)='✰ ✰ ✰ ✰ (3) Guide ✰ ✰ ✰ ✰'
+			length(k)=25
 		ELSE
-			string(5)='(3) Guide'
-			length(5)=9
+			string(k)='(3) Guide'
+			length(k)=9
 		END IF
-		row_num(5)=11
+		row_num(k)=11; k=k+1
+
+		IF ((manim .EQV. .TRUE.).AND.(wchoice==4)) THEN
+			string(k)='✰ ✰ ✰ (4) High Scores ✰ ✰ ✰'
+			length(k)=27
+		ELSE
+			string(k)='(4) High Scores'
+			length(k)=15
+		END IF
+		row_num(k)=13; k=k+1
 
 		IF ((manim .EQV. .TRUE.).AND.(wchoice==0)) THEN
-			string(6)='✰ ✰ ✰ ✰ (0) Exit Game ✰ ✰ ✰ ✰'
-			length(6)=29
+			string(k)='✰ ✰ ✰ ✰ (0) Exit Game ✰ ✰ ✰ ✰'
+			length(k)=29
 		ELSE
-			string(6)='(0) Exit Game'
-			length(6)=13
+			string(k)='(0) Exit Game'
+			length(k)=13
 		END IF
-		row_num(6)=row+3
+		row_num(k)=row+3; k=k+1
 
-		last=6
+		last=k-1
+
+	CASE('S_Standard')	!SCORE STANDARD HIGH SCORES
+		string(k)='⋲    HIGH SCORES    ⋺'
+		length(k)=21;	row_num(k)=3; k=k+1
+
+		string(k)='- - Standard - -'
+		length(k)=16;	row_num(k)=4; k=k+1
+
+		string(k)='Name     Score  Diff.   Kills  Acc.  Wave'
+		length(k)=41;	row_num(k)=6; k=k+1
+
+		OPEN(unit=100, file='.scores_standard.dat', status='old')	!Open Score File
+		DO i=1,10
+			DO j=1,6
+				READ(100,5001) score_array(i,j)			!Record information
+				5001 FORMAT(A7)
+			END DO
+		END DO
+		CLOSE(100)
+
+		DO i=1,10
+			IF ((naming .EQV. .TRUE.).AND.(ranking==i)) THEN
+				string(k)= '> ' // score_array(i,1) // '  ' // TRIM(score_array(i,2)) // '  ' // &
+					score_array(i,3) // '  ' // TRIM(score_array(i,4)) // '   ' // &
+					TRIM(score_array(i,5))  // '   ' // TRIM(score_array(i,6)) // ' <'
+				length(k)=45
+			ELSE
+				string(k)=score_array(i,1) // '  ' // TRIM(score_array(i,2)) // '  ' // &
+					score_array(i,3) // '  ' // TRIM(score_array(i,4)) // '   ' // &
+					TRIM(score_array(i,5)) // '   ' // TRIM(score_array(i,6))
+				length(k)=41
+			END IF
+				row_num(k)=6+i; k=k+1
+		END DO
+
+		IF (naming .EQV. .TRUE.) THEN
+			string(k)='Enter your name cadet! (7 characters max)'
+			length(k)=41
+			row_num(k)=row-1; k=k+1
+		END IF
+
+		IF ((manim .EQV. .TRUE.).AND.(wchoice==1)) THEN
+			string(k)='✰ ✰ (1) Endless High Scores ✰ ✰'
+			length(k)=31
+		ELSE
+			string(k)='(1) Endless High Scores'
+			length(k)=23
+		END IF
+		IF (naming .EQV. .FALSE.) THEN
+			row_num(k)=row-1
+		ELSE
+			row_num(k)=row
+		END IF
+		k=k+1
+
+		IF ((manim .EQV. .TRUE.).AND.(wchoice==7)) THEN
+			string(k)='✰ ✰ (7) Reset High Scores ✰ ✰'
+			length(k)=29
+		ELSE
+			string(k)='(7) Reset High Scores'
+			length(k)=21
+		END IF
+		row_num(k)=row+1; k=k+1
+
+		IF ((manim .EQV. .TRUE.).AND.(wchoice==0)) THEN
+			string(k)='✰ ✰ (0) Back to Main Menu ✰ ✰'
+			length(k)=29
+		ELSE
+			string(k)='(0) Back to Main Menu'
+			length(k)=21
+		END IF
+		row_num(k)=row+3; k=k+1
+
+		last=k-1
+
+	CASE('S_Endless')	!SCORE ENDLESS HIGH SCORES
+		string(k)='⋲    HIGH SCORES    ⋺'
+		length(k)=21;	row_num(k)=3; k=k+1
+
+		string(k)='- - Endless - -'
+		length(k)=15;	row_num(k)=4; k=k+1
+
+		string(k)='Name     Score  Diff.   Kills   Acc.'
+		length(k)=36;	row_num(k)=6; k=k+1
+
+		OPEN(unit=200, file='.scores_endless.dat', status='old')	!Open Score File
+		DO i=1,10
+			DO j=1,6
+				READ(200,5001) score_array(i,j)			!Record information
+			END DO
+		END DO
+		CLOSE(200)
+
+		DO i=1,10
+			IF ((naming .EQV. .TRUE.).AND.(ranking==i)) THEN
+				string(k)= '> ' // score_array(i,1) // '  ' // TRIM(score_array(i,2)) // '  ' // &
+					score_array(i,3) // '  ' // TRIM(score_array(i,4)) // '   ' // &
+					TRIM(score_array(i,5))  // ' <'
+				length(k)=40
+			ELSE
+				string(k)=score_array(i,1) // '  ' // TRIM(score_array(i,2)) // '  ' // &
+					score_array(i,3) // '  ' // TRIM(score_array(i,4)) // '   ' // &
+					TRIM(score_array(i,5))
+				length(k)=36
+			END IF
+				row_num(k)=6+i; k=k+1
+		END DO
+
+		IF (naming .EQV. .TRUE.) THEN
+			string(k)='Enter your name cadet! (7 characters max)'
+			length(k)=41
+			row_num(k)=row-1; k=k+1
+		END IF
+
+		IF ((manim .EQV. .TRUE.).AND.(wchoice==1)) THEN
+			string(k)='✰ ✰ (1) Standard High Scores ✰ ✰'
+			length(k)=32
+		ELSE
+			string(k)='(1) Standard High Scores'
+			length(k)=24
+		END IF
+		IF (naming .EQV. .FALSE.) THEN
+			row_num(k)=row-1
+		ELSE
+			row_num(k)=row
+		END IF
+		k=k+1
+
+		IF ((manim .EQV. .TRUE.).AND.(wchoice==7)) THEN
+			string(k)='✰ ✰ (7) Reset High Scores ✰ ✰'
+			length(k)=29
+		ELSE
+			string(k)='(7) Reset High Scores'
+			length(k)=21
+		END IF
+		row_num(k)=row+1; k=k+1
+
+		IF ((manim .EQV. .TRUE.).AND.(wchoice==0)) THEN
+			string(k)='✰ ✰ (0) Back to Main Menu ✰ ✰'
+			length(k)=29
+		ELSE
+			string(k)='(0) Back to Main Menu'
+			length(k)=21
+		END IF
+		row_num(k)=row+3; k=k+1
+
+		last=k-1
 
 	CASE('Cheats')		!CHEATS
 		string(1)='⋲         Cheats        ⋺'
@@ -665,33 +931,33 @@ menu_selector: SELECT CASE(wmenu)
 		total=num_ordinance(1)+2*num_ordinance(2)+3*num_ordinance(3)	!total ordinance points remaining
 		IF (ordinancepoints<10) THEN
 			WRITE(Lordinancepoints,10) ordinancepoints	!record ordinance points
-			k=1	!numer of columns occupied by Lordinancepoints
+			h=1	!numer of columns occupied by Lordinancepoints
 		ELSE
 			WRITE(Lordinancepoints,20) ordinancepoints
-			k=2
+			h=2
 		END IF
 
 		IF (total<=ordinancepoints) THEN
 			WRITE(Ltotal,10) ordinancepoints-total
 			string(6)=trim(Ltotal) // '/' // trim(Lordinancepoints) // ' Ordinance Points'
-			length(6)=19+k
+			length(6)=19+h
 		ELSE IF (total<=ordinancepoints+9) THEN
 			WRITE(Ltotal,10) total-ordinancepoints
 			IF (wchoice==1) THEN		!if trying to start game and poitns are over -> flag
 				string(6)='⇶ -' // trim(Ltotal) // '/' // trim(Lordinancepoints) // ' Ordinance Points'
-				length(6)=22+k
+				length(6)=22+h
 			ELSE
 				string(6)='-' // trim(Ltotal) // '/' // trim(Lordinancepoints) // ' Ordinance Points'
-				length(6)=20+k
+				length(6)=20+h
 			END IF
 		ELSE
 			WRITE(Ltotal,20) total-ordinancepoints
 			IF (wchoice==1) THEN		!if trying to start game and poitns are over -> flag
 				string(6)='⇶ -' // Ltotal // '/' // trim(Lordinancepoints) // ' Ordinance Points'
-				length(6)=23+k
+				length(6)=23+h
 			ELSE
 				string(6)='-' // Ltotal // '/' // trim(Lordinancepoints) // ' Ordinance Points'
-				length(6)=21+k
+				length(6)=21+h
 			END IF
 		END IF
 		row_num(6)=10
@@ -1231,7 +1497,7 @@ menu_selector: SELECT CASE(wmenu)
 		string(7)='ↂ'
 		length(7)=1;	row_num(7)=10
 
-		string(8)='9x♥    650x✪'
+		string(8)='7x♥    650x✪'
 		length(8)=12;	row_num(8)=11
 
 		string(9)='A fiercely powerful opponent which'
@@ -1445,7 +1711,7 @@ END SUBROUTINE select_menu
 SUBROUTINE which_show(wshow,int_addcounter,float_addcounter,kills,shots,hits,score,difficulty,finalscore,&
 								accuracy,accuracy_mod,difficulty_mod,ptime,pcount)
 	IMPLICIT NONE
-	LOGICAL, DIMENSION(2,13) :: wshow
+	LOGICAL, DIMENSION(2,15) :: wshow
 	INTEGER :: k, int_addcounter, ptime, pcount
 	INTEGER :: kills, shots, hits, score, difficulty, finalscore
 	REAL :: float_addcounter, accuracy, accuracy_mod, difficulty_mod
@@ -1454,11 +1720,16 @@ k=1
 DO WHILE (wshow(1,k) .EQV. .TRUE.)	!bring k up to proper index
 k=k+1
 END DO
+IF (k==1) ptime=25			!account for first Win/Lose title
 
 g_wshow: SELECT CASE(k-1)
 	CASE(1)							!❈ SHOTS:
 		IF (int_addcounter<shots) THEN
-			ptime=3			!set number of pauses to 1
+			IF (shots<=90) THEN
+				ptime=3			!set number of pauses to 3
+			ELSE
+				ptime=2
+			END IF
 			IF (int_addcounter+2<shots) THEN
 				int_addcounter=int_addcounter+2	!increase counter for printing
 			ELSE
@@ -1473,8 +1744,12 @@ g_wshow: SELECT CASE(k-1)
 		END IF
 	CASE(2)							!☄ HITS:
 		IF (int_addcounter<hits) THEN
-			ptime=3
-			IF (int_addcounter+2<shots) THEN
+			IF (hits<=90) THEN
+				ptime=3
+			ELSE
+				ptime=2
+			END IF
+			IF (int_addcounter+2<hits) THEN
 				int_addcounter=int_addcounter+2
 			ELSE
 				int_addcounter=hits
@@ -1503,7 +1778,11 @@ g_wshow: SELECT CASE(k-1)
 		END IF
 	CASE(4)							!☠ KILLS:
 		IF (int_addcounter<kills) THEN
-			ptime=3
+			IF (kills<=90) THEN
+				ptime=3
+			ELSE
+				ptime=2
+			END IF
 			IF (int_addcounter+2<kills) THEN
 				int_addcounter=int_addcounter+2
 			ELSE
@@ -1519,11 +1798,11 @@ g_wshow: SELECT CASE(k-1)
 	CASE(5)							!✪ SCORE:
 		IF (int_addcounter<score) THEN
 			ptime=1
-			IF (int_addcounter+25<score) THEN
-				int_addcounter=int_addcounter+25
+			IF (int_addcounter+55<score) THEN
+				int_addcounter=int_addcounter+55
 			ELSE
 				int_addcounter=score
-				ptime=35
+				ptime=18
 			END IF
 		ELSE
 			int_addcounter=0
@@ -1532,16 +1811,24 @@ g_wshow: SELECT CASE(k-1)
 			wshow(2,k-1)=.TRUE.
 		END IF
 	CASE(6)							!╳
-		wshow(1,k)=.TRUE.
-		wshow(2,k-1)=.TRUE.	
+		IF (int_addcounter<3) THEN
+			ptime=4
+			int_addcounter=int_addcounter+1
+			IF (int_addcounter==2) ptime=18
+		ELSE
+			int_addcounter=0
+			float_addcounter=0.
+			wshow(1,k)=.TRUE.
+			wshow(2,k-1)=.TRUE.	
+		END IF
 	CASE(7)							!⌖ ACCURACY MOD:
 		IF (float_addcounter<accuracy_mod) THEN
 			ptime=3
-			IF (float_addcounter+0.1<accuracy_mod) THEN
-				float_addcounter=float_addcounter+0.1
+			IF (float_addcounter+0.15<accuracy_mod) THEN
+				float_addcounter=float_addcounter+0.15
 			ELSE
 				float_addcounter=accuracy_mod
-				ptime=35
+				ptime=18
 			END IF
 		ELSE
 			int_addcounter=0
@@ -1550,16 +1837,24 @@ g_wshow: SELECT CASE(k-1)
 			wshow(2,k-1)=.TRUE.
 		END IF
 	CASE(8)							!╳
-		wshow(1,k)=.TRUE.
-		wshow(2,k-1)=.TRUE.
+		IF (int_addcounter<3) THEN
+			ptime=4
+			int_addcounter=int_addcounter+1
+			IF (int_addcounter==2) ptime=18
+		ELSE
+			int_addcounter=0
+			float_addcounter=0.
+			wshow(1,k)=.TRUE.
+			wshow(2,k-1)=.TRUE.	
+		END IF
 	CASE(9)							!⌖☠ DIFFICULTY MOD:
 		IF (float_addcounter<difficulty_mod) THEN
 			ptime=3
-			IF (float_addcounter+0.1<difficulty_mod) THEN
-				float_addcounter=float_addcounter+0.1
+			IF (float_addcounter+0.15<difficulty_mod) THEN
+				float_addcounter=float_addcounter+0.15
 			ELSE
 				float_addcounter=difficulty_mod
-				ptime=35
+				ptime=18
 			END IF
 		ELSE
 			int_addcounter=0
@@ -1577,7 +1872,7 @@ g_wshow: SELECT CASE(k-1)
 				int_addcounter=int_addcounter+15
 			ELSE
 				int_addcounter=finalscore
-				ptime=50
+				ptime=20
 			END IF
 		ELSE
 			int_addcounter=0
@@ -1587,9 +1882,13 @@ g_wshow: SELECT CASE(k-1)
 		END IF
 	CASE(12)
 		wshow(1,k)=.TRUE.
+		wshow(1,k+1)=.TRUE.
 		wshow(2,k-1)=.TRUE.
+!	CASE(13)
+!		wshow(1,13)=.TRUE.
+!		wshow(1,14)=.TRUE.
 	CASE DEFAULT
-		ptime=30	
+		ptime=3	
 	END SELECT g_wshow
 
 RETURN
@@ -1599,19 +1898,18 @@ END SUBROUTINE which_show
 ! This block is used to load the appropriate strings before printing.  It uses "wmenu"
 ! and "wchoice" to determine the correct strings to load.
 SUBROUTINE select_wshow(row,col,string,length,row_num,last,wshow,int_addcounter,float_addcounter,kills,shots,&
-				hits,score,difficulty,finalscore,accuracy,accuracy_mod,difficulty_mod,endgame,maxgrade)
+			hits,score,difficulty,finalscore,accuracy,accuracy_mod,difficulty_mod,endgame,maxgrade,ptime)
 	IMPLICIT NONE
 	CHARACTER(3*col), DIMENSION(row) :: string
 	CHARACTER(LEN=5) :: Lint_addcounter
 	CHARACTER(LEN=16) :: Lgrading
 	INTEGER, intent(in) :: row, col
 	INTEGER :: length(row), row_num(row), last, grading, maxgradedivision, maxgrade, k
-	LOGICAL, DIMENSION(2,13) :: wshow
-	INTEGER :: int_addcounter, kills, shots, hits, score, difficulty, finalscore, endgame
+	LOGICAL, DIMENSION(2,15) :: wshow
+	INTEGER :: int_addcounter, kills, shots, hits, score, difficulty, finalscore, endgame, ptime
 	REAL :: float_addcounter, accuracy, accuracy_mod, difficulty_mod
 
 k=1
-!	CASE('WinLose')		!Win/Lose Screen
 		IF (endgame==0) THEN
 			string(k)='☠ You lose!☠'
 			length(k)=12
@@ -1711,7 +2009,15 @@ k=1
 			string(k)=''
 			length(k)=0
 		ELSE
-			string(k)='╳'
+			IF (wshow(2,6) .EQV. .FALSE.) THEN
+				IF (int_addcounter<2) THEN
+					string(k)='╱'
+				ELSE
+					string(k)='╳'
+				END IF
+			ELSE
+				string(k)='╳'
+			END IF
 			length(k)=1
 		END IF
 		row_num(10)=13; k=k+1
@@ -1735,7 +2041,15 @@ k=1
 			string(k)=''
 			length(k)=0
 		ELSE
-			string(k)='╳'
+			IF (wshow(2,8) .EQV. .FALSE.) THEN
+				IF (int_addcounter<2) THEN
+					string(k)='╱'
+				ELSE
+					string(k)='╳'
+				END IF
+			ELSE
+				string(k)='╳'
+			END IF
 			length(k)=1
 		END IF
 		row_num(k)=15; k=k+1
@@ -1783,14 +2097,14 @@ k=1
 		ELSE
 			maxgradedivision=maxgrade/24
 			IF (finalscore<maxgrade/2) THEN
-				Lgrading='F     Failure ✖'
-				grading=9
+				Lgrading='F     Failure‼'
+				grading=8
 			ELSE IF (finalscore<maxgrade-maxgradedivision*11) THEN
-				Lgrading='D-    Defeated'
-				grading=8
+				Lgrading='D-    Defeated!'
+				grading=9
 			ELSE IF (finalscore<maxgrade-maxgradedivision*10) THEN
-				Lgrading='D     Deadbeat'
-				grading=8
+				Lgrading='D     Deadbeat!'
+				grading=9
 			ELSE IF (finalscore<maxgrade-maxgradedivision*9) THEN
 				Lgrading='D+    Deficient'
 				grading=9
@@ -1829,6 +2143,34 @@ k=1
 			length(k)=6+grading
 		END IF
 		row_num(k)=19; k=k+1
+
+		IF (wshow(1,13) .EQV. .FALSE.) THEN		!High Score
+			string(k)=''
+			length(k)=0
+		ELSE
+			IF (wshow(2,13) .EQV. .TRUE.) THEN
+				string(k)='✰ ✰ (1) View/Enter High Scores ✰ ✰'
+				length(k)=34
+			ELSE
+				string(k)='(1) View/Enter High Scores'
+				length(k)=26
+			END IF
+		END IF
+		row_num(k)=21; k=k+1
+
+		IF (wshow(1,14) .EQV. .FALSE.) THEN		!Back to Menu
+			string(k)=''
+			length(k)=0
+		ELSE
+			IF (wshow(2,14) .EQV. .TRUE.) THEN
+				string(k)='✰ ✰ (0) Back to Main Menu ✰ ✰'
+				length(k)=29
+			ELSE
+				string(k)='(0) Back to Main Menu'
+				length(k)=21
+			END IF
+		END IF
+		row_num(k)=22; k=k+1
 
 		last=k-1
 

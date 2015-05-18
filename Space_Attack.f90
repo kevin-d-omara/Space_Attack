@@ -1,6 +1,3 @@
-!
-PROGRAM array_invaders
-!
 ! Purpose:
 !    This began as an attempt to recreate the classic game Space Invaders, made by Tomohiro Nishikado and released in 1978.
 !	Instead this has organically grown into a different game, and is still evolving as such.
@@ -20,7 +17,7 @@ PROGRAM array_invaders
 !	>gfortran -fopenmp sys_keyin.o graphics_sub.o primaries_sub.o lose_animation.o Space_Attack.o
 !	>./a.out	=) enjoy!
 !
-! Latest Version: 1.9.4
+! Latest Version: 1.9.5
 !
 !	Changelog:
 !		//(1.0.0) //02/25/15 	created
@@ -48,48 +45,63 @@ PROGRAM array_invaders
 !					added last wave / victory animations
 !					added + playtested Endless gametype
 !		//(1.9.4) //05/04/15	added cool Metal Slug style scoring screen
-!					!NOTE: BUG with finalscore -> grading scramble
-!					!TO DO: at scoring screen offer: High Score Table, Play Again, Exit Game
+!			  //05/09/15		-fixed scambling
+!		//(1.9.5) //05/15/15	added high score records, small balance tweaks (wave 5)
 !
-!				TO DO:	save game (high score); optimize timing so game runs smoothly, optimize forcefield destruction
-!				BUGS:	!!!final score scrambled between final score and grading!!!
-!				BUGS:	forcefield destruction doesn't always work right(?)
+!				TO DO:	optimize timing so game runs smoothly, make bouncing powerups
+!				BUGS:	forcefield destruction doesn't always work right
 !				BONUS: 2-player vs. computer AND 1 vs. 1 (alien overlord spawning invaders!!!)
 !
-!
-! ------------------ Variable declarations -----------------------------
 
+! --------------------------- MODULES -----------------------------------
+!
+MODULE settings			!This MODULE is to protect player settings.
+	IMPLICIT NONE
+	CHARACTER(1), DIMENSION(2,5) :: control
+	INTEGER :: difficulty
+END MODULE settings
+!
+! ------------------------- Main Program --------------------------------
+!
+PROGRAM array_invaders
+!
+! --------------------- Variable declarations ---------------------------
+
+	USE settings
 	IMPLICIT NONE
 	INTEGER, PARAMETER :: row=19, col=15	!#rows must be = 4N+3 for code to work // (X-3)/4=N
-	INTEGER :: endgame, x00, i, j, k, h, frame, charge, updown, shots, kills, hits, dframe, limit, difficulty
+	INTEGER :: endgame, x00, i, j, k, h, frame, charge, updown, shots, kills, hits, dframe, limit
 	INTEGER ::  score, wincon, wave, last, length(row), row_num(row), lives, eplaser, flop, score2
-	INTEGER :: tcounter, mcount, dcount, yesno=1, wchoice, total, ordinancepoints, gcounter, difficulty_hold
+	INTEGER :: tcounter, mcount, dcount, yesno=1, wchoice, total, ordinancepoints, gcounter
 	INTEGER :: num_ordinance(5), spawn(21), int_addcounter, maxgrade, ptime, pcount, finalscore
+	INTEGER :: ranking
 	INTEGER, DIMENSION (row,col) :: animation, invader, laser, elaser, powerup
 	REAL :: start, finish, rate(8), float_addcounter, accuracy_mod, difficulty_mod, accuracy
 	CHARACTER(1) ::	command, gcommand		 !C(LEN=1) == C(1) == C
-	CHARACTER(1), DIMENSION(2,5) :: control
 	CHARACTER(3*col), DIMENSION(row) :: string
 	CHARACTER(10) :: wmenu, gametype
-	LOGICAL :: multiplier, damageboost, entercommand, manim, rblank, cheat(5), select_spawn, firstshow
-	LOGICAL, DIMENSION(2,13) :: wshow
+	CHARACTER(LEN=7), DIMENSION(11,6) :: score_array
+	CHARACTER(LEN=7) :: player_name
+	LOGICAL :: multiplier, damageboost, entercommand, manim, rblank, cheat(5), select_spawn, firstshow, naming
+	LOGICAL, DIMENSION(2,15) :: wshow
 
-!------------------------------------------------------------------------------------------!
-!----------BEGIN GAME----------BEGIN GAME----------BEGIN GAME----------BEGIN GAME----------!
-!------------------------------------------------------------------------------------------!
+! ---------------------------------------------------------------------------------------------
+! --------------------- MENU SEQUENCE --------------------- MENU SEQUENCE ---------------------
+! ---------------------------------------------------------------------------------------------
+
 CALL menu_initialize(wmenu,wchoice,endgame,manim,rblank,control,difficulty,gametype,num_ordinance,&
-								ordinancepoints,yesno,cheat)
+							ordinancepoints,yesno,cheat,naming)
 DO WHILE(yesno==1)	!GAME START
 	DO WHILE ((wmenu/='START!').AND.(wmenu/='EXIT'))	!MENU SEQUENCE					!!select menu and load strings
 		CALL select_menu(string,length,row_num,last,row,col,wmenu,wchoice,manim,control,&
-					difficulty,gametype,num_ordinance,total,ordinancepoints,lives,cheat)
+			difficulty,gametype,num_ordinance,total,ordinancepoints,lives,cheat,score_array,naming,ranking)
 		CALL print_menu(row,col,string,length,row_num,last)		!print menu to screen
 		IF (manim .EQV. .TRUE.) THEN						!IF menu animated
 			CALL ctimer()						!determine which option was selected
 			CALL which_option(command,wchoice,wmenu,manim,rblank,control,difficulty,&
-						gametype,num_ordinance,total,ordinancepoints,yesno,lives,cheat)
+					gametype,num_ordinance,total,ordinancepoints,yesno,lives,cheat)
 			CALL select_menu(string,length,row_num,last,row,col,wmenu,wchoice,manim,control,&
-						difficulty,gametype,num_ordinance,total,ordinancepoints,lives,cheat)
+					difficulty,gametype,num_ordinance,total,ordinancepoints,lives,cheat,score_array,naming,ranking)
 			CALL print_menu(row,col,string,length,row_num,last)
 		END IF
 		IF ((wmenu/='START!').AND.(wmenu/='EXIT')) THEN
@@ -104,10 +116,13 @@ DO WHILE(yesno==1)	!GAME START
 	END DO				!END MENU SEQUENCE
 	IF (yesno==0) GOTO 10	!Exit Program
 	CALL initialize(invader,elaser,laser,powerup,animation,x00,row,col,endgame,frame,charge,updown,shots,hits,kills,score,wave,lives,&
-		multiplier,tcounter,mcount,dcount,entercommand,command,difficulty,cheat,rate,limit,gcounter,select_spawn,spawn,gametype,&
-														difficulty_hold)
+		multiplier,tcounter,mcount,dcount,entercommand,command,cheat,rate,limit,gcounter,select_spawn,spawn,gametype)
 	CALL printscreen(row,col,animation,invader,gcommand,frame,charge,updown,score,wave,lives,control,&
 						dframe,endgame,multiplier,damageboost,tcounter,mcount,dcount,limit,num_ordinance)
+
+! ---------------------------------------------------------------------------------------------
+! ----------------------- BEGIN GAME ----------------------- BEGIN GAME -----------------------
+! ---------------------------------------------------------------------------------------------
 
 !This parallel region has two main sections.  The first is the bulk of the game and takes care of all the action.  The second allows the
 !  player to enter commands at will.  This is entirely necessary as Fortran pauses computation at a READ statement until the user hits enter.
@@ -151,9 +166,9 @@ DO WHILE(yesno==1)	!GAME START
 		END IF
 	   END DO			!END MAIN GAME LOOP
 		IF (endgame==0) THEN
-			WRITE(*,*) 'Game over man, game over! (hit any key to continue)'
+			WRITE(*,*) 'Game over man, game over! (enter any key to continue)'
 		ELSE		!endgame==9
-			WRITE(*,*) "You did it, you killed them all! (hit any key to continue)"
+			WRITE(*,*) "You did it, you killed them all! (enter any key to continue)"
 		END IF
 		entercommand=.FALSE.
 	!$OMP SECTION
@@ -162,29 +177,101 @@ DO WHILE(yesno==1)	!GAME START
 		END DO
 				!Else EXIT LOOP
 	!$OMP END SECTIONS
+
 !$OMP END PARALLEL
+
+! ---------------------------------------------------------------------------------------------
+! --------------------- GAME RESULTS ----------------------- GAME RESULTS ---------------------
+! ---------------------------------------------------------------------------------------------
+
 	!Win/Lose Sequence
-	CALL init_winlose_sequence(kills,shots,hits,score,difficulty,finalscore,difficulty_hold,accuracy,&
-				accuracy_mod,difficulty_mod,float_addcounter,wshow,int_addcounter,ptime,pcount,firstshow)
-	DO WHILE (wshow(1,13) .EQV. .FALSE.)
+	CALL init_winlose_sequence(kills,shots,hits,score,finalscore,accuracy,accuracy_mod,difficulty_mod,float_addcounter,&
+								wshow,int_addcounter,ptime,pcount,firstshow,maxgrade,rblank)
+	command='p'
+	DO WHILE (wshow(2,15) .EQV. .FALSE.)
 		CALL which_show(wshow,int_addcounter,float_addcounter,kills,shots,hits,score,difficulty,finalscore,&
 									accuracy,accuracy_mod,difficulty_mod,ptime,pcount)
 		CALL select_wshow(row,col,string,length,row_num,last,wshow,int_addcounter,float_addcounter,kills,shots,&
-						hits,score,difficulty,finalscore,accuracy,accuracy_mod,difficulty_mod,endgame,maxgrade)
+					hits,score,difficulty,finalscore,accuracy,accuracy_mod,difficulty_mod,endgame,maxgrade,ptime)
 		CALL print_menu(row,col,string,length,row_num,last)		!print menu to screen
 		DO WHILE (pcount<ptime)
 			pcount=pcount+1
 			CALL ctimerfast()
 		END DO
 		pcount=0
-		IF (firstshow .EQV. .TRUE.) THEn
+		IF (firstshow .EQV. .TRUE.) THEN
 			firstshow=.FALSE.
 			wshow(1,1)=.TRUE.
 		END IF
+		!Secondary part -> Read command (back to menu or high score)
+		IF ((wshow(1,13) .EQV. .TRUE.).AND.(rblank .EQV. .TRUE.)) THEN
+			command='p'			!prevent unwanted command
+			CALL enter_command(command)	!read menu choice
+		END IF
+		IF (command=='0') THEN
+			wshow(2,14)=.TRUE.	!flag stars for "Back to Menu"
+			rblank=.FALSE.		!de-flag read command
+		ELSE IF (command=='1') THEN
+			wshow(2,13)=.TRUE.	!flag stars for "High Score"
+			rblank=.FALSE.
+		END IF
+		IF (wshow(1,15) .EQV. .TRUE.) wshow(2,15)=.TRUE.			!flag exit loop
+		IF (wshow(2,14).OR.wshow(2,13) .EQV. .TRUE.) wshow(1,15)=.TRUE.	!flag animation choice
 	END DO
-	yesno=0
-	command='p'	!if the player decides to play again this prevents a pre-set first command
 
+	IF (difficulty==1) THEN			!Reset special ordinance
+		num_ordinance(1)=2; num_ordinance(2)=2; num_ordinance(3)=1
+	ELSE IF (difficulty==2) THEN
+		num_ordinance(1)=0; num_ordinance(2)=0; num_ordinance(3)=1
+	ELSE
+		num_ordinance(1)=2; num_ordinance(2)=2; num_ordinance(3)=3
+	END IF
+
+! ---------------------------------------------------------------------------------------------
+! --------------------- HIGH SCORES ------------------------- HIGH SCORES ---------------------
+! ---------------------------------------------------------------------------------------------
+
+	CALL determine_ranking(score_array,gametype,accuracy,finalscore,wave,kills,ranking)
+
+	IF (command=='0') THEN		!back to Main Menu
+		wmenu='Main'
+	ELSE IF (command=='1') THEN	!High Score screen
+		IF (gametype=='Standard') THEN				!Flag proper High Score screen
+			wmenu='S_Standard'
+		ELSE IF (gametype=='Endless') THEN
+			wmenu='S_Endless'
+		END IF
+
+		IF (ranking<=10) naming=.TRUE.				!Print screen with → ← flags
+		CALL select_menu(string,length,row_num,last,row,col,wmenu,wchoice,manim,control,&
+			difficulty,gametype,num_ordinance,total,ordinancepoints,lives,cheat,score_array,naming,ranking)
+		CALL print_menu(row,col,string,length,row_num,last)
+
+		READ(*,*) player_name					!Read player's entered name
+		naming=.FALSE.
+		score_array(ranking,1)=player_name
+
+		IF (gametype=='Standard') THEN				!Open appropriate data file
+			OPEN(unit=100, file='.scores_standard.dat', status='unknown')
+			k=100
+		ELSE IF (gametype=='Endless') THEN
+			OPEN(unit=200, file='.scores_endless.dat', status='unknown')
+			k=200
+		END IF
+
+		DO i=1,10
+			DO j=1,6
+				WRITE(k,5001) score_array(i,j)		!Overwrite with new scores
+			END DO
+		END DO
+		5001 FORMAT(A7)
+		CLOSE (k)
+	ELSE
+		yesno=0		!Exit Game
+	END IF
+
+
+	command='p'	!if the player decides to play again this prevents a pre-set first command
 10 END DO
 END PROGRAM array_invaders
 
@@ -200,12 +287,12 @@ END PROGRAM array_invaders
 
 !--------Initialize positions--------Initialize Positions--------Initialize positions--------Initialize Positions--------
 SUBROUTINE initialize(invader,elaser,laser,powerup,animation,x00,row,col,endgame,frame,charge,updown,shots,hits,kills,score,&
-wave,lives,multiplier,tcounter,mcount,dcount,entercommand,command,difficulty,cheat,rate,limit,gcounter,select_spawn,spawn,gametype,&
-														difficulty_hold)
+wave,lives,multiplier,tcounter,mcount,dcount,entercommand,command,cheat,rate,limit,gcounter,select_spawn,spawn,gametype)
+	USE settings
 	IMPLICIT NONE
-	REAL ::  rate(8)
+	REAL ::  rate(8), u
 	INTEGER :: x00, endgame, frame, charge, updown, shots, hits, kills, score, wave, lives, i, j, tcounter, mcount, dcount
-	INTEGER :: limit, difficulty, gcounter, spawn(21), difficulty_hold
+	INTEGER :: limit, gcounter, spawn(21)
 	INTEGER, intent(in) :: row, col
 	INTEGER, DIMENSION (row,col) :: invader, elaser, laser, powerup, animation
 	LOGICAL :: multiplier, entercommand, cheat(5), select_spawn
@@ -234,7 +321,7 @@ gcounter=0	!set gauntlet counter to 0
 select_spawn=.TRUE.	!set gauntlet to select spawn
 spawn=0		!set spawn sequence to empty
 rate=1		!Set Rates:
-	rate(1)=0.0245	!1/41		Spawn Powerup
+	rate(1)=0.0220	!1/42		Spawn Powerup
 	rate(2)=0.1	!1/10		Skirmisher	Plasma
 	rate(3)=0.0555	!1/18		Bomber		Triple Plasma
 	rate(4)=0.1667	!1/6		Gunner		Plasma
@@ -244,24 +331,20 @@ rate=1		!Set Rates:
 	rate(8)=0.0126	!1/20 (/4)	Mothership	Spawn
 
 IF (difficulty==1) THEN		!Normal				!Apply difficulty modifiers
-	difficulty_hold=1
 	lives=2
 	limit=32	!powerup duration
 ELSE IF (difficulty==2) THEN	!Brutal
-	difficulty_hold=2
 	lives=1
 	limit=24
 	rate=rate*1.25	!125% rate
 	rate(1)=rate(1)*0.75/1.25
 ELSE				!Easy
-	difficulty_hold=3
 	lives=3
 	limit=40
 	rate=rate*0.75	!75% rate
 	rate(1)=rate(1)*1.25/0.75
 END IF
 IF (cheat(2) .EQV. .TRUE.) lives=5	!cheat(2)==.TRUE. -> Fiver Active
-
 
 CALL init_random_seed()	!randomly pick a new random number seed
 
@@ -789,14 +872,14 @@ wave_number: SELECT CASE(wave)
 			END DO
 		END DO
 	CASE(5)					!Escort
-		invader(3,3)=52; invader(3,13)=52
-		DO j=1,5
-			powerup(4,j)=291
+		invader(5,col/2-3)=52; invader(5,col/2+2)=52
+		DO j=col/2-5,col/2-1
+			powerup(6,j)=291
 		END DO
-		DO j=11,15
-			powerup(4,j)=291
+		DO j=col/2,col/2+4
+			powerup(6,j)=291
 		END DO
-		DO j=3,col-2
+		DO j=col/2-4,col/2+3
 			invader(1,j)=11
 		END DO
 		DO i=6,12,2
@@ -823,9 +906,9 @@ wave_number: SELECT CASE(wave)
 			END DO
 		END DO
 	CASE(7)					!Bay Doors
-		invader(1,6)=74; invader(1,10)=74
-		invader(1,8)=52
-		DO j=6,10
+		invader(1,2)=74; invader(1,14)=74
+		invader(1,3)=52
+		DO j=1,5
 			powerup(2,j)=291
 		END DO
 		DO i=4,12,2
@@ -936,13 +1019,14 @@ RETURN
 END SUBROUTINE turn_start
 
 !-------Write Win Sequence-------Write Win Sequence-------Write Win Sequence-------Write Win Sequence-------
-SUBROUTINE init_winlose_sequence(kills,shots,hits,score,difficulty,finalscore,difficulty_hold,accuracy,&
-				accuracy_mod,difficulty_mod,float_addcounter,wshow,int_addcounter,ptime,pcount,firstshow)
+SUBROUTINE init_winlose_sequence(kills,shots,hits,score,finalscore,accuracy,accuracy_mod,difficulty_mod,float_addcounter,&
+								wshow,int_addcounter,ptime,pcount,firstshow,maxgrade,rblank)
+	USE settings
 	IMPLICIT NONE
-	INTEGER :: kills, shots, hits, score, difficulty, finalscore, accuracy_int, difficulty_hold, maxgrade
+	INTEGER :: kills, shots, hits, score, finalscore, accuracy_int, maxgrade
 	REAL :: accuracy, accuracy_mod, difficulty_mod, float_addcounter
-	LOGICAL, DIMENSION(2,13) :: wshow
-	LOGICAL :: firstshow
+	LOGICAL, DIMENSION(2,15) :: wshow
+	LOGICAL :: firstshow, rblank
 	INTEGER :: int_addcounter, ptime, pcount
 
 wshow=.FALSE.		!first row determines which showing is being animated
@@ -953,17 +1037,14 @@ float_addcounter=0.	!set float adding counter to 0
 ptime=60		!set starting number of pauses
 pcount=0		!set pause count to 0
 maxgrade=5000		!set upper bound for an A+ grade
-
-IF (difficulty_hold==0) THEN	!Difficulty Modifier
-	difficulty=0			!Set Difficulty = 0
+rblank=.TRUE.		!set to read command
+IF (difficulty==0) THEN	!Difficulty Modifier
 	difficulty_mod=0.75		!Easy = 75%
 
-ELSE IF (difficulty_hold==1) THEN
-	difficulty=1			!Set Difficulty = 1
+ELSE IF (difficulty==1) THEN
 	difficulty_mod=1.00		!Normal = 100%
 
 ELSE
-	difficulty=2			!Set Difficulty = 2
 	difficulty_mod=1.25		!Brutal = 125%
 END IF
 
@@ -980,16 +1061,83 @@ END IF
 
 finalscore = score*accuracy_mod*difficulty_mod	!Final Score
 
-!IF (yesno==1) THEN
-!	wmenu='Prep'	!Flag Prepare to Fight menu
-!	IF (difficulty==1) THEN			!Reset special ordinance
-!		num_ordinance(1)=2; num_ordinance(2)=2; num_ordinance(3)=1
-!	ELSE IF (difficulty==2) THEN
-!		num_ordinance(1)=0; num_ordinance(2)=0; num_ordinance(3)=1
-!	ELSE
-!		num_ordinance(1)=2; num_ordinance(2)=2; num_ordinance(3)=3
-!	END IF
-!END IF
-
 RETURN
 END SUBROUTINE init_winlose_sequence
+
+!------- Determine Ranking ------- Determine Ranking ------- Determine Ranking -------
+SUBROUTINE determine_ranking(score_array,gametype,accuracy,finalscore,wave,kills,ranking)
+	USE settings, ONLY: difficulty
+	IMPLICIT NONE
+	CHARACTER(LEN=7), DIMENSION(11,6) :: score_array
+	CHARACTER(10) :: gametype
+	REAL :: accuracy
+	INTEGER :: finalscore, wave, kills, ranking
+	CHARACTER(LEN=7) :: int_to_string
+	INTEGER :: string_to_int
+	INTEGER :: i, j, k, l, h
+	
+
+	IF (gametype=='Standard') THEN			!Open appropriate data file
+		OPEN(unit=100, file='.scores_standard.dat', status='unknown')
+		k=100
+	ELSE IF (gametype=='Endless') THEN
+		OPEN(unit=200, file='.scores_endless.dat', status='unknown')
+		k=200
+	END IF
+
+	DO i=1,10
+		DO j=1,6
+			READ(k,5001) score_array(i,j)	!Record information
+		END DO
+	END DO
+	5001 FORMAT(A7)
+
+	h=0; l=99999; score_array(11,2)= '-1'		!Determine player's ranking
+	DO WHILE(finalscore<l)
+		h=h+1
+		READ(score_array(h,2),'(I5)') string_to_int
+		l=string_to_int
+	END DO
+	ranking=h					!Resultant "h" is the player's ranking
+
+	IF (h/=11) THEN
+		DO i=11,h+1,-1
+			DO j=1,6
+				score_array(i,j)=score_array(i-1,j)	!Shift scores down	
+			END DO
+		END DO
+
+		score_array(h,1) = 'Cadet  '		!Overwrites ranking "h" with player's values
+		WRITE(int_to_string,'(I5.5)') finalscore
+		score_array(h,2) = TRIM(int_to_string)
+		IF (difficulty==1) THEN
+			score_array(h,3) = 'Normal '
+		ELSE IF (difficulty==2) THEN
+			score_array(h,3) = 'Brutal '
+		ELSE
+			score_array(h,3) = 'Easy   '
+		END IF
+		WRITE(int_to_string,'(I3.3)') kills
+		score_array(h,4) = TRIM(int_to_string)
+		WRITE(int_to_string,'(F4.1)') accuracy
+		score_array(h,5) = TRIM(int_to_string) // '%'
+		WRITE(int_to_string,'(I2.2)') wave
+		score_array(h,6) = TRIM(int_to_string)
+	END IF
+	CLOSE(k)
+
+	IF (k==100) THEN				!Open appropriate data file
+		OPEN(unit=100, file='.scores_standard.dat', status='unknown')
+	ELSE
+		OPEN(unit=200, file='.scores_endless.dat', status='unknown')
+	END IF
+
+	DO i=1,10
+		DO j=1,6
+			WRITE(k,5001) score_array(i,j)		!Overwrite with new scores
+		END DO
+	END DO
+	CLOSE (k)
+
+RETURN
+END SUBROUTINE determine_ranking
