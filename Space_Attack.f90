@@ -17,7 +17,7 @@
 !	>gfortran -fopenmp sys_keyin.o graphics_sub.o primaries_sub.o lose_animation.o Space_Attack.o
 !	>./a.out	=) enjoy!
 !
-! Latest Version: 1.9.5
+! Latest Version: 1.9.6
 !
 !	Changelog:
 !		//(1.0.0) //02/25/15 	created
@@ -47,6 +47,7 @@
 !		//(1.9.4) //05/04/15	added cool Metal Slug style scoring screen
 !			  //05/09/15		-fixed scambling
 !		//(1.9.5) //05/15/15	added high score records, small balance tweaks (wave 5)
+!		//(1.9.6) //05/23/15	added diagonal moving powerups
 !
 !				TO DO:	optimize timing so game runs smoothly, make bouncing powerups
 !				BUGS:	forcefield destruction doesn't always work right
@@ -355,6 +356,7 @@ IF (gametype=='Standard') THEN
 		END DO
 	END DO
 END IF
+
 	!Print initial position
 CALL execute_command_line('clear')	!Clear screen before printing
 
@@ -505,7 +507,7 @@ SUBROUTINE printscreen(row,col,animation,invader,gcommand,frame,charge,updown,sc
 						endgame,multiplier,damageboost,tcounter,mcount,dcount,limit,num_ordinance)
 	IMPLICIT NONE				!This subroutine handles the beautiful graphics
 	INTEGER :: i, j, flip, rl, frame, charge, updown, score, wave, lives, dframe, endgame, tcounter, mcount, dcount, limit
-	INTEGER :: anim_index
+	INTEGER :: anim_index, rlDiag
 	INTEGER, DIMENSION(5) :: num_ordinance
 	INTEGER, intent(in) :: row, col
 	INTEGER, DIMENSION (row,col) :: animation, invader	!x==animation; y==invader
@@ -618,6 +620,8 @@ DO i=1,(row-1)		!scale rows (-player row)
 						call elaser_move(frame,rl)
 					CASE(200)
 						call powerup_move(frame,rl)	!begin powerups
+					CASE(310,320,410,420)
+						call powerup_diag(frame)
 					CASE(-250:-200)
 						call powerup_destroyed(row,col,animation,i,j)
 					CASE(290)
@@ -643,7 +647,6 @@ DO i=1,(row-1)		!scale rows (-player row)
 					CASE(2010:2014)
 						anim_index=animation(i,j)
 						call nextwave_2010(dframe,anim_index)
-
 				END SELECT even_move
 		END IF
 		IF (j==col) WRITE(*,9000) ' │'	!Right border
@@ -821,7 +824,7 @@ END SUBROUTINE win_condition
 !--------Wave Set--------Wave Set--------Wave Set--------Wave Set--------Wave Set--------
 SUBROUTINE wave_set(invader,elaser,laser,powerup,x00,row,col,charge,updown,wave,endgame,rate)
 	IMPLICIT NONE
-	INTEGER :: x00, charge, updown, wave, i, j, endgame, p
+	INTEGER :: x00, charge, updown, wave, i, j, endgame, p, u_int
 	INTEGER, intent(in) :: row, col
 	INTEGER, DIMENSION (row,col) :: invader, elaser, laser, powerup
 	REAL :: u, rate(8)
@@ -853,7 +856,22 @@ wave_number: SELECT CASE(wave)
 		DO i=4,10,2
 			DO j=1,col
 				CALL random_number(u)
-				IF (u<rate(1)) powerup(i,j)=202
+				IF (u<rate(1)) THEN
+					CALL random_number(u)
+					u_int=u*100
+					powerup_direction3: SELECT CASE(u_int)
+						CASE(0:10)
+							powerup(i,j)=312
+						CASE(11:20)
+							powerup(i,j)=322
+						CASE(21:30)
+							powerup(i,j)=412
+						CASE(31:40)
+							powerup(i,j)=422
+						CASE DEFAULT
+							powerup(i,j)=202
+						END SELECT powerup_direction3
+				END IF
 			END DO
 		END DO
 	CASE(4)					!Pepper Jack
@@ -868,7 +886,22 @@ wave_number: SELECT CASE(wave)
 		DO i=4,10,2
 			DO j=1,col
 				CALL random_number(u)
-				IF (u<rate(1)) powerup(i,j)=202
+				IF (u<rate(1)) THEN
+					CALL random_number(u)
+					u_int=u*100
+					powerup_direction4: SELECT CASE(u_int)
+						CASE(0:10)
+							powerup(i,j)=312
+						CASE(11:20)
+							powerup(i,j)=322
+						CASE(21:30)
+							powerup(i,j)=412
+						CASE(31:40)
+							powerup(i,j)=422
+						CASE DEFAULT
+							powerup(i,j)=202
+						END SELECT powerup_direction4
+				END IF
 			END DO
 		END DO
 	CASE(5)					!Escort
@@ -882,10 +915,25 @@ wave_number: SELECT CASE(wave)
 		DO j=col/2-4,col/2+3
 			invader(1,j)=11
 		END DO
-		DO i=6,12,2
+		DO i=8,12,2
 			DO j=1,col
 				CALL random_number(u)
-				IF (u<rate(1)) powerup(i,j)=202
+				IF (u<rate(1)) THEN
+					CALL random_number(u)
+					u_int=u*100
+					powerup_direction5: SELECT CASE(u_int)
+						CASE(0:10)
+							powerup(i,j)=312
+						CASE(11:20)
+							powerup(i,j)=322
+						CASE(21:30)
+							powerup(i,j)=412
+						CASE(31:40)
+							powerup(i,j)=422
+						CASE DEFAULT
+							powerup(i,j)=202
+						END SELECT powerup_direction5
+				END IF
 			END DO
 		END DO
 	CASE(6)					!Warp Time
@@ -902,7 +950,22 @@ wave_number: SELECT CASE(wave)
 		DO i=4,10,2
 			DO j=1,col
 				CALL random_number(u)
-				IF (u<rate(1)) powerup(i,j)=202
+				IF (u<rate(1)) THEN
+					CALL random_number(u)
+					u_int=u*100
+					powerup_direction6: SELECT CASE(u_int)
+						CASE(0:10)
+							powerup(i,j)=312
+						CASE(11:20)
+							powerup(i,j)=322
+						CASE(21:30)
+							powerup(i,j)=412
+						CASE(31:40)
+							powerup(i,j)=422
+						CASE DEFAULT
+							powerup(i,j)=202
+						END SELECT powerup_direction6
+				END IF
 			END DO
 		END DO
 	CASE(7)					!Bay Doors
@@ -914,23 +977,53 @@ wave_number: SELECT CASE(wave)
 		DO i=4,12,2
 			DO j=1,col
 				CALL random_number(u)
-				IF (u<rate(1)) powerup(i,j)=202
+				IF (u<rate(1)) THEN
+					CALL random_number(u)
+					u_int=u*100
+					powerup_direction7: SELECT CASE(u_int)
+						CASE(0:10)
+							powerup(i,j)=312
+						CASE(11:20)
+							powerup(i,j)=322
+						CASE(21:30)
+							powerup(i,j)=412
+						CASE(31:40)
+							powerup(i,j)=422
+						CASE DEFAULT
+							powerup(i,j)=202
+						END SELECT powerup_direction7
+				END IF
 			END DO
 		END DO
 	CASE(8)					!Death Star
-		invader(1,col/3)=32; invader(3,col)=32
-		invader(1,2*col/3)=42
-		invader(3,3)=52; invader(3,13)=52
+		invader(1,2)=32; invader(1,col-3)=42
+		invader(1,col/2)=32
+		invader(1,3)=52; invader(1,col-4)=52
 		DO j=1,5
-			powerup(4,j)=291
+			powerup(2,j)=291
 		END DO
-		DO j=11,15
-			powerup(4,j)=291
+		DO j=col-5,col-1
+			powerup(2,j)=291
 		END DO
 		DO i=2,14,2
 			DO j=1,col
 				CALL random_number(u)
-				IF (u<rate(1)) powerup(i,j)=202
+				IF (u<rate(1)) THEN
+					CALL random_number(u)
+					u_int=u*100
+					powerup_direction8: SELECT CASE(u_int)
+						CASE(0:10)
+							powerup(i,j)=312
+						CASE(11:20)
+							powerup(i,j)=322
+						CASE(21:30)
+							powerup(i,j)=412
+						CASE(31:40)
+							powerup(i,j)=422
+						CASE DEFAULT
+							powerup(i,j)=202
+						END SELECT powerup_direction8
+				END IF
 			END DO
 		END DO
 	CASE(9)					!Final Fight
@@ -938,7 +1031,22 @@ wave_number: SELECT CASE(wave)
 		DO i=2,14,2
 			DO j=1,col
 				CALL random_number(u)
-				IF (u<rate(1)) powerup(i,j)=202
+				IF (u<rate(1)) THEN
+					CALL random_number(u)
+					u_int=u*100
+					powerup_direction9: SELECT CASE(u_int)
+						CASE(0:10)
+							powerup(i,j)=312
+						CASE(11:20)
+							powerup(i,j)=322
+						CASE(21:30)
+							powerup(i,j)=412
+						CASE(31:40)
+							powerup(i,j)=422
+						CASE DEFAULT
+							powerup(i,j)=202
+						END SELECT powerup_direction9
+				END IF
 			END DO
 		END DO
 	CASE DEFAULT
@@ -1036,7 +1144,7 @@ int_addcounter=0	!set integer adding counter to 0
 float_addcounter=0.	!set float adding counter to 0
 ptime=60		!set starting number of pauses
 pcount=0		!set pause count to 0
-maxgrade=5000		!set upper bound for an A+ grade
+maxgrade=4400		!set upper bound for an A+ grade
 rblank=.TRUE.		!set to read command
 IF (difficulty==0) THEN	!Difficulty Modifier
 	difficulty_mod=0.75		!Easy = 75%

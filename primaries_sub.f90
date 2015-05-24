@@ -395,31 +395,76 @@ END SUBROUTINE move_invader
 !-------Move Powerup-------Move Powerup-------Move Powerup-------Move Powerup-------Move Powerup-------
 SUBROUTINE move_powerup(x,row,col)		!NOTE: powerups have the opposite movement flow of invaders
 	IMPLICIT NONE
-	INTEGER :: i, j
+	INTEGER :: i, j, k, h, a, b, c
 	INTEGER, intent(in) :: row, col
 	INTEGER, DIMENSION (row,col) :: x, y		!x==powerup; y==temporary loading matrix
+	LOGICAL :: right
 
 IF (MAXVAL(x)/=0) THEN					!Only do if powerups are in play
 	y=0	!clear temporary matrix before populating
+	right=.TRUE.	!set first move to right
 
-	DO i=2,row-5,4		!move down (right edge)
-		y(i+2,col)=x(i,col)
-	END DO
+	DO i=2,row-1,2
+		DO j=1,col
+			IF (x(i,j)/=0) THEN	!check if occupied
+				IF (x(i,j)-MOD(x(i,j),10)<=292) THEN		!normal powerup [#202] OR forcefield [#291]
+					IF ((j==1).AND.(right .EQV. .FALSE.)) THEN
+						y(i+2,1)=x(i,1)		!move down (left side)
+					ELSE IF ((j==col).AND.(right .EQV. .TRUE.).AND.(i/=row-1)) THEN
+						y(i+2,col)=x(i,col)	!move down (right side)
+					ELSE
+						IF (right .EQV. .TRUE.) THEN
+							y(i,j+1)=x(i,j)	!move right
+						ELSE
+							y(i,j-1)=x(i,j)	!move left
+						END IF
+					END IF
+				ELSE						!diagonal moving powerup [#300 OR #400]
+					!Diagonal Powerups:	#300 = up
+					!			#400 = down
+					!			# 10 = right
+					!			# 20 = left
+					!---Check for boarders---
+					a=x(i,j)-100*(x(i,j)/100)		!322-300=22
+					WRITE(*,*) a
+					b=a-MOD(a,10)				!22-2=20
+					WRITE(*,*) b
+					c=x(i,j)-MOD(x(i,j),100)		!322-22=300
+					WRITE(*,*) c
+					WRITE(*,*) x(i,j)
+					WRITE(*,*) x(i,j)-MOD(x(i,j),10)
 
-	DO i=4,row-3,4		!move down (left edge)
-		y(i+2,1)=x(i,1)
-	END DO
+					IF ((i==2).AND.(c==300)) x(i,j)=x(i,j)+100	!toggle up -> down
+					IF ((i==row-1).AND.(c==400)) x(i,j)=x(i,j)-100	!toggle down -> up
+					IF ((j==1).AND.(b==20)) x(i,j)=x(i,j)-10
+					IF ((j==col).AND.(b==10)) x(i,j)=x(i,j)+10			
 
-	DO i=2,row-1,4		!move right
-		DO j=1,col-1
-			y(i,j+1)=x(i,j)
+					!---Determine new coordinates---
+					c=x(i,j)-MOD(x(i,j),100)		!322-22=300
+					IF (c==300) THEN	!up
+						k=-2
+					ELSE			!down
+						k=2
+					END IF
+
+					a=x(i,j)-100*(x(i,j)/100)		!312-300=12
+					b=a-MOD(a,10)				!12-2=10
+
+					IF (b==10) THEN		!right
+						h=1
+					ELSE			!left
+						h=-1
+					END IF
+
+					y(i+k,j+h)=x(i,j)		!move to new coordinates
+				END IF
+			END IF
 		END DO
-	END DO
-
-	DO i=4,row-3,4		!move left
-		DO j=1,col-1
-			y(i,j)=x(i,j+1)
-		END DO
+		IF (right .EQV. .TRUE.) THEN		!toggle direction
+			right = .FALSE.
+		ELSE
+			right = .TRUE.
+		END IF
 	END DO
 
 	x=0	!clear powerup matrix before updating with new locations
@@ -849,7 +894,7 @@ SUBROUTINE powerup_death(powerup,animation,row,col,i,j,kills,hits,score,eplaser,
 	LOGICAL :: multiplier, damageboost
 
 IF (eplaser==1) THEN	!if player destroyed powerup
-	IF (powerup(i,j)==200) THEN
+	IF ((powerup(i,j)==200).OR.(powerup(i,j)==310).OR.(powerup(i,j)==320).OR.(powerup(i,j)==410).OR.(powerup(i,j)==420)) THEN
 		score=score+100			!update score
 		CALL random_number(u)		!determine powerup type
 		u_int=100*u

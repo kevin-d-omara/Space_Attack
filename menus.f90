@@ -647,7 +647,7 @@ menu_selector: SELECT CASE(wmenu)
 		string(k)="by Kevin O'Mara"
 		length(k)=15;	row_num(k)=20; k=k+1
 
-		string(k)='version 1.9.5'
+		string(k)='version 1.9.6'
 		length(k)=13;	row_num(k)=row+3; k=k+1
 
 		last=k-1

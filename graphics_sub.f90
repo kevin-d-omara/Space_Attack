@@ -424,6 +424,20 @@ END IF
 RETURN
 END SUBROUTINE powerup_move
 
+SUBROUTINE powerup_diag(frame)
+	INTEGER :: frame
+	g_powerup_diag: SELECT CASE(frame)
+		CASE(1)
+			WRITE(*,9001, advance='no') ' ◆ '
+		CASE(2)
+			WRITE(*,9001, advance='no') ' ◈ '
+		CASE DEFAULT
+			WRITE(*,9001, advance='no') ' ◇ '
+		END SELECT g_powerup_diag
+	9001 FORMAT(A)
+RETURN
+END SUBROUTINE powerup_diag
+
 !-------POWERUP DESTROYED------POWERUP DESTROYED-------POWERUP DESTROYED-------POWERUP DESTROYED-------
 SUBROUTINE powerup_destroyed(row,col,animation,i,j)
 	INTEGER :: i, j
