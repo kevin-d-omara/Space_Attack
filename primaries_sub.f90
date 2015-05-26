@@ -32,120 +32,218 @@
 !				(-1)=player projectile; (1)=enemy projectile
 
 !-------Gauntlet-------Gauntlet-------Gauntlet-------Gauntlet-------Gauntlet-------Gauntlet-------
-SUBROUTINE gauntlet(row,col,invader,powerup,spawn,select_spawn,gcounter,x00,rate)
+SUBROUTINE gauntlet(row,col,invader,powerup,spawn,select_spawn,gcounter,x00,rate,gametype)
 	IMPLICIT NONE
-	REAL :: u, v, rate(8)
+	REAL :: u, v, rate(8), powerupRate
 	INTEGER, intent(in) :: row, col
 	INTEGER, DIMENSION(row,col) :: invader, powerup
-	INTEGER :: spawn(21), v_int, gcounter, k, x00
+	INTEGER :: spawn(50), v_int, gcounter, k, x00, u_int, spawnCount, weightCount, weight
+	CHARACTER(10) :: gametype
 	LOGICAL :: select_spawn
 
-IF (select_spawn .EQV. .TRUE.) THEN		!select spawn package
-	CALL random_number(u)
-	IF (u>.95+.41*rate(1)) THEN 	!1/25	4% chance to spawn package (3.5% Easy & 4.5% Brutal)
-		CALL random_number(v)
-		v_int=100*v
-		package: SELECT CASE(v_int)
-			CASE(0:10)		!10x Invaders
-				spawn(1:10)=(/ (11, k=1,10) /)
-				spawn(15)=6666				!6666 is end of package flag
-			CASE(11:20)		!Invaders every other
-				DO k=1,20,2
-					spawn(k)=11
-				END DO
-			CASE(21:25)		! 5x Skirmisher
-				DO k=1,20,4
-					spawn(k)=21
-				END DO
-			CASE(26:30)		! 3x Bomber
-				DO k=1,18,6
-					spawn(k)=32
-				END DO
-			CASE(31:35)		! 3x Gunner
-				DO k=1,18,6
-					spawn(k)=42
-				END DO
-			CASE(36:40)		! 5x Warper
-				DO k=1,20,4
-					spawn(k)=61
-				END DO
-			CASE(41:45)		! 1x Shielder
-				spawn(1)=52
-				spawn(15)=6666
-			CASE(46:50)		! 1x Carrier
-				spawn(1)=74
-				spawn(15)=6666
-			CASE(51:55)		! 1x Shield escorting 4x Invaders
-				spawn(1:2)=(/ (11, k=1,2) /)
-				spawn(3)=52
-				spawn(4:5)=(/ (11, k=1,2) /)
-			CASE(56:60)		! 1x Carrier escorted by 2x Skirmishers
-				spawn(1)=21; spawn(5)=21
-				spawn(3)=74
-			CASE(61:65)		! 3x Skirmisher and 5x Warper
-				DO k=1,15,5
-					spawn(k)=21
-				END DO
-				DO k=2,20,4
-					spawn(k)=61
-				END DO
-			CASE(66:70)		! 10x Invader w/ random Warper
-				DO k=1,10
-					CALL random_number(u)
-					IF (u<.201) THEN
-						spawn(k)=61
-					ELSE
-						spawn(k)=11
-					END IF
-				END DO
-			CASE(71:75)		! 10x Invader w/ random Skirmisher
-				DO k=1,10
-					CALL random_number(u)
-					IF (u<.225) THEN
-						spawn(k)=21
-					ELSE
-						spawn(k)=11
-					END IF
-				END DO
-			CASE(76:81)		! 1x Invader
-				spawn(1)=11
-				spawn(2)=6666
-			CASE(82:84)		! 1x Skirmisher
-				spawn(1)=21
-				spawn(2)=6666
-			CASE(85:87)		! 1x Bomber
-				spawn(1)=32
-				spawn(2)=6666
-			CASE(88:90)		! 1x Gunner
-				spawn(1)=42
-				spawn(2)=6666
-			CASE(91:93)		! 1x Warper
-				spawn(1)=61
-				spawn(2)=6666
-			CASE(94:95)		! 1x Shielder
-				spawn(1)=52
-				spawn(2)=6666
-			CASE(96:97)		! 1x Carrier
-				spawn(1)=74
-				spawn(2)=6666
-			CASE(98:100)		! 1x Mothership (get fucked!)
-				spawn(1)=87
-			END SELECT package
-		select_spawn=.FALSE.	!trigger spawn sequence and pause select package
+IF (gametype=='Endless') THEN
+	IF (select_spawn .EQV. .TRUE.) THEN		!select spawn package
+		CALL random_number(u)
+		IF (u>.95+.41*rate(1)) THEN 	!1/25	4% chance to spawn package (3.5% Easy & 4.5% Brutal)
+			CALL random_number(v)
+			v_int=v*102		!102 multiplier = maximum weight
+			weightCount=v_int
+			spawnCount=0
+			weight=0
+			DO WHILE (weightCount>0)
+				weightCount=weightCount-weight
+				IF (weightCount>0) spawnCount=spawnCount+1
+				package: SELECT CASE(spawnCount)
+					CASE(1)		!10x Invaders
+						weight=5
+						IF (weightCount<0) THEN
+							spawn(1:10)=(/ (11, k=1,10) /)
+							spawn(15)=6666				!6666 is end of package flag
+						END IF
+					CASE(2)		!Invaders every other
+						weight=5
+						IF (weightCount<0) THEN
+							DO k=1,20,2
+								spawn(k)=11
+							END DO
+						END IF
+					CASE(3)		! 5x Skirmisher
+						weight=5
+						IF (weightCount<0) THEN
+							DO k=1,20,4
+								spawn(k)=21
+							END DO
+						END IF
+					CASE(4)		! 3x Bomber
+						weight=5
+						IF (weightCount<0) THEN
+							DO k=1,18,6
+								spawn(k)=32
+							END DO
+						END IF
+					CASE(5)		! 3x Gunner
+						weight=5
+						IF (weightCount<0) THEN
+							DO k=1,18,6
+								spawn(k)=42
+							END DO
+						END IF
+					CASE(6)		! 5x Warper
+						weight=5
+						IF (weightCount<0) THEN
+							DO k=1,20,4
+								spawn(k)=61
+							END DO
+						END IF
+					CASE(7)		! 1x Shielder
+						weight=5
+						IF (weightCount<0) THEN
+							spawn(1)=52
+							spawn(15)=6666
+						END IF
+					CASE(8)		! 1x Carrier
+						weight=5
+						IF (weightCount<0) THEN
+							spawn(1)=74
+							spawn(15)=6666
+						END IF
+					CASE(9)		! 1x Shield escorting 4x Invaders
+						weight=5
+						IF (weightCount<0) THEN
+							spawn(1:2)=(/ (11, k=1,2) /)
+							spawn(3)=52
+							spawn(4:5)=(/ (11, k=1,2) /)
+						END IF
+					CASE(10)		! 1x Carrier escorted by 2x Skirmishers
+						weight=5
+						IF (weightCount<0) THEN
+							spawn(1)=21; spawn(5)=21
+							spawn(3)=74
+						END IF
+					CASE(11)		! 3x Skirmisher and 5x Warper
+						weight=5
+						IF (weightCount<0) THEN
+							DO k=1,15,5
+								spawn(k)=21
+							END DO
+							DO k=2,20,4
+								spawn(k)=61
+							END DO
+						END IF
+					CASE(12)		! 10x Invader w/ random Warper
+						weight=5
+						IF (weightCount<0) THEN
+							DO k=1,10
+								CALL random_number(u)
+								IF (u<.201) THEN
+									spawn(k)=61
+								ELSE
+									spawn(k)=11
+								END IF
+							END DO
+						END IF
+					CASE(13)		! 10x Invader w/ random Skirmisher
+						weight=5
+						IF (weightCount<0) THEN
+							DO k=1,10
+								CALL random_number(u)
+								IF (u<.225) THEN
+									spawn(k)=21
+								ELSE
+									spawn(k)=11
+								END IF
+							END DO
+						END IF
+					CASE(14)		! 1x Invader
+						weight=5
+						IF (weightCount<0) THEN
+							spawn(1)=11
+							spawn(2)=6666
+						END IF
+					CASE(15)		! 1x Skirmisher
+						weight=5
+						IF (weightCount<0) THEN
+							spawn(1)=21
+							spawn(2)=6666
+						END IF
+					CASE(16)		! 1x Bomber
+						weight=5
+						IF (weightCount<0) THEN
+							spawn(1)=32
+							spawn(2)=6666
+						END IF
+					CASE(17)		! 1x Gunner
+						weight=5
+						IF (weightCount<0) THEN
+							spawn(1)=42
+							spawn(2)=6666
+						END IF
+					CASE(18)		! 1x Warper
+						weight=5
+						IF (weightCount<0) THEN
+							spawn(1)=61
+							spawn(2)=6666
+						END IF
+					CASE(19)		! 1x Shielder
+						weight=5
+						IF (weightCount<0) THEN
+							spawn(1)=52
+							spawn(2)=6666
+						END IF
+					CASE(20)		! 1x Carrier
+						weight=5
+						IF (weightCount<0) THEN
+							spawn(1)=74
+							spawn(2)=6666
+						END IF
+					CASE(21)		! 1x Mothership (get fucked!)
+						weight=2
+						IF (weightCount<0) THEN
+							spawn(1)=87
+						END IF
+					END SELECT package
+			END DO
+				select_spawn=.FALSE.	!trigger spawn sequence and pause select package
+		END IF
+	ELSE						!spawning sequence
+		gcounter=gcounter+1
+		IF ((spawn(gcounter)/=6666).AND.(gcounter/=21)) THEN
+		x00=spawn(gcounter)
+		ELSE
+			spawn=0
+			gcounter=0
+			select_spawn=.TRUE.
+		END IF
 	END IF
-ELSE						!spawning sequence
+ELSE	!gametype=='Stantard'
 	gcounter=gcounter+1
-	IF ((spawn(gcounter)/=6666).AND.(gcounter/=21)) THEN
-	x00=spawn(gcounter)
-	ELSE
-		spawn=0
-		gcounter=0
-		select_spawn=.TRUE.
-	END IF
+	IF (gcounter<=50) x00=spawn(gcounter)
+END IF
+
+IF (gametype=='Endless') THEN		!set powerup spawn rate
+	powerupRate=rate(1)/2
+ELSE
+	powerupRate=rate(1)/4
 END IF
 
 CALL random_number(u)
-IF (u<rate(1)/2) powerup(2,1)=202		!1/82 Normal powerup chance (1/62 Easy & 1/103 Brutal
+IF (u<powerupRate) THEN		!1/82 Normal powerup chance (1/62 Easy & 1/103 Brutal)
+	CALL random_number(u)
+	u_int=u*100
+	powerup_direction8: SELECT CASE(u_int)
+		CASE(0:6)
+			powerup(row-1,1)=312
+		CASE(7:12)
+			powerup(row-1,col)=322
+		CASE(13:18)
+			powerup(2,1)=412
+		CASE(19:24)
+			powerup(2,col)=422
+		CASE DEFAULT
+			powerup(2,1)=202
+		END SELECT powerup_direction8
+END IF
+
 
 RETURN
 END SUBROUTINE gauntlet
@@ -891,17 +989,21 @@ SUBROUTINE powerup_death(powerup,animation,row,col,i,j,kills,hits,score,eplaser,
 	INTEGER :: kills, hits, score, eplaser, u_int, lives, num_ordinance(5)		!powerup 	#202 (i.e. 2 Health)
 	INTEGER, intent(in) :: row, col, i, j						!force field	#291
 	INTEGER, DIMENSION(row,col) :: powerup, animation
-	LOGICAL :: multiplier, damageboost
+	LOGICAL :: multiplier, damageboost, diagBonus
 
+diagBonus=.FALSE.
 IF (eplaser==1) THEN	!if player destroyed powerup
 	IF ((powerup(i,j)==200).OR.(powerup(i,j)==310).OR.(powerup(i,j)==320).OR.(powerup(i,j)==410).OR.(powerup(i,j)==420)) THEN
+		IF ((powerup(i,j)==310).OR.(powerup(i,j)==320).OR.(powerup(i,j)==410).OR.(powerup(i,j)==420)) diagBonus=.TRUE.
 		score=score+100			!update score
+		IF (diagBonus .EQV. .TRUE.) score=score+50	!+50 extra points for destroying a diagonal powerup
 		CALL random_number(u)		!determine powerup type
 		u_int=100*u
 		powerup_type: SELECT CASE(u_int)
 			CASE(0:25)
 				animation(i,j)=-210		!flag destroyed +1 Life		#-210
 				lives=lives+1
+				IF (diagBonus .EQV. .TRUE.) lives=lives+1
 			CASE(26:50)
 				animation(i,j)=-220		!flag destroyed 2x Score	#-220
 				multiplier=.TRUE.
@@ -910,10 +1012,13 @@ IF (eplaser==1) THEN	!if player destroyed powerup
 				CALL random_number(u)
 				IF (u<0.331) THEN
 					num_ordinance(1)=num_ordinance(1)+3
+					IF (diagBonus .EQV. .TRUE.) num_ordinance(1)=num_ordinance(1)+3
 				ELSE IF (u<0.661) THEN
 					num_ordinance(2)=num_ordinance(2)+2
+					IF (diagBonus .EQV. .TRUE.) num_ordinance(2)=num_ordinance(2)+4
 				ELSE
 					num_ordinance(3)=num_ordinance(3)+1
+					IF (diagBonus .EQV. .TRUE.) num_ordinance(3)=num_ordinance(3)+2
 				END IF
 			CASE(76:100)
 				animation(i,j)=-240		!flag destroyed 2x Damage	#-240

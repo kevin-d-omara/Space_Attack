@@ -17,7 +17,7 @@
 !	>gfortran -fopenmp sys_keyin.o graphics_sub.o primaries_sub.o lose_animation.o Space_Attack.o
 !	>./a.out	=) enjoy!
 !
-! Latest Version: 1.9.6
+! Latest Version: 1.9.7
 !
 !	Changelog:
 !		//(1.0.0) //02/25/15 	created
@@ -48,6 +48,8 @@
 !			  //05/09/15		-fixed scambling
 !		//(1.9.5) //05/15/15	added high score records, small balance tweaks (wave 5)
 !		//(1.9.6) //05/23/15	added diagonal moving powerups
+!		//(1.9.7) //05/26/15	added game pause, mechanics for mid-wave spawning in Standard, tweaked spawn rate and bonus
+!					of diagonal powerups, & modularized gauntlet spawn packages
 !
 !				TO DO:	optimize timing so game runs smoothly, make bouncing powerups
 !				BUGS:	forcefield destruction doesn't always work right
@@ -74,7 +76,7 @@ PROGRAM array_invaders
 	INTEGER :: endgame, x00, i, j, k, h, frame, charge, updown, shots, kills, hits, dframe, limit
 	INTEGER ::  score, wincon, wave, last, length(row), row_num(row), lives, eplaser, flop, score2
 	INTEGER :: tcounter, mcount, dcount, yesno=1, wchoice, total, ordinancepoints, gcounter
-	INTEGER :: num_ordinance(5), spawn(21), int_addcounter, maxgrade, ptime, pcount, finalscore
+	INTEGER :: num_ordinance(5), spawn(50), int_addcounter, maxgrade, ptime, pcount, finalscore
 	INTEGER :: ranking
 	INTEGER, DIMENSION (row,col) :: animation, invader, laser, elaser, powerup
 	REAL :: start, finish, rate(8), float_addcounter, accuracy_mod, difficulty_mod, accuracy
@@ -118,7 +120,7 @@ DO WHILE(yesno==1)	!GAME START
 	IF (yesno==0) GOTO 10	!Exit Program
 	CALL initialize(invader,elaser,laser,powerup,animation,x00,row,col,endgame,frame,charge,updown,shots,hits,kills,score,wave,lives,&
 		multiplier,tcounter,mcount,dcount,entercommand,command,cheat,rate,limit,gcounter,select_spawn,spawn,gametype)
-	CALL printscreen(row,col,animation,invader,gcommand,frame,charge,updown,score,wave,lives,control,&
+	CALL printscreen(command,row,col,animation,invader,gcommand,frame,charge,updown,score,wave,lives,control,&
 						dframe,endgame,multiplier,damageboost,tcounter,mcount,dcount,limit,num_ordinance)
 
 ! ---------------------------------------------------------------------------------------------
@@ -145,26 +147,29 @@ DO WHILE(yesno==1)	!GAME START
 		IF (multiplier.EQV. .TRUE.) score=score+2*(score-score2)	!apply 2x score multiplier powerup
 
 		DO WHILE (frame<4)		!3 Frame Animation.
-			CALL printscreen(row,col,animation,invader,gcommand,frame,charge,&
+			CALL printscreen(command,row,col,animation,invader,gcommand,frame,charge,&
 		updown,score,wave,lives,control,dframe,endgame,multiplier,damageboost,tcounter,mcount,dcount,limit,num_ordinance)
 			CALL ctimer()	!Timer to allow a pause between frames.
 			frame=frame+1
 		END DO
 		frame=1; !reset frame count
-		IF (gametype=='Endless') CALL gauntlet(row,col,invader,powerup,spawn,select_spawn,gcounter,x00,rate)
+		CALL gauntlet(row,col,invader,powerup,spawn,select_spawn,gcounter,x00,rate,gametype)	!Handles Endless & mid-wave spawns
 		CALL win_condition(invader,elaser,laser,powerup,x00,row,col,charge,updown,wave,endgame,lives,animation,gcommand,&
-		frame,score,dframe,multiplier,damageboost,tcounter,mcount,dcount,limit,control,num_ordinance,gametype,rate)
+		frame,score,dframe,multiplier,damageboost,tcounter,mcount,dcount,limit,control,num_ordinance,gametype,rate,spawn,gcounter)
 		IF (endgame==0) THEN					!Begin Lose Animation
 			dframe=0
 			frame=3		!to freeze final positions
 			flop=0; h=0	!set first wave explosions
 			DO k=1,70	!loser_animation frame count
 				CALL loser_animation(row,col,animation,dframe,h,flop,invader)
-				CALL printscreen(row,col,animation,invader,gcommand,frame,charge,updown,&
+				CALL printscreen(command,row,col,animation,invader,gcommand,frame,charge,updown,&
 			score,wave,lives,control,dframe,endgame,multiplier,damageboost,tcounter,mcount,dcount,limit,num_ordinance)
 				CALL ctimer()	!Timer to allow a pause between frames
 			END DO
 		END IF
+		DO WHILE(command==control(1,4))	!Pause
+			CALL ctimer()
+		END DO
 	   END DO			!END MAIN GAME LOOP
 		IF (endgame==0) THEN
 			WRITE(*,*) 'Game over man, game over! (enter any key to continue)'
@@ -188,7 +193,7 @@ DO WHILE(yesno==1)	!GAME START
 	!Win/Lose Sequence
 	CALL init_winlose_sequence(kills,shots,hits,score,finalscore,accuracy,accuracy_mod,difficulty_mod,float_addcounter,&
 								wshow,int_addcounter,ptime,pcount,firstshow,maxgrade,rblank)
-	command='p'
+	command='o'
 	DO WHILE (wshow(2,15) .EQV. .FALSE.)
 		CALL which_show(wshow,int_addcounter,float_addcounter,kills,shots,hits,score,difficulty,finalscore,&
 									accuracy,accuracy_mod,difficulty_mod,ptime,pcount)
@@ -206,7 +211,7 @@ DO WHILE(yesno==1)	!GAME START
 		END IF
 		!Secondary part -> Read command (back to menu or high score)
 		IF ((wshow(1,13) .EQV. .TRUE.).AND.(rblank .EQV. .TRUE.)) THEN
-			command='p'			!prevent unwanted command
+			command='o'			!prevent unwanted command
 			CALL enter_command(command)	!read menu choice
 		END IF
 		IF (command=='0') THEN
@@ -272,7 +277,7 @@ DO WHILE(yesno==1)	!GAME START
 	END IF
 
 
-	command='p'	!if the player decides to play again this prevents a pre-set first command
+	command='o'	!if the player decides to play again this prevents a pre-set first command
 10 END DO
 END PROGRAM array_invaders
 
@@ -293,7 +298,7 @@ wave,lives,multiplier,tcounter,mcount,dcount,entercommand,command,cheat,rate,lim
 	IMPLICIT NONE
 	REAL ::  rate(8), u
 	INTEGER :: x00, endgame, frame, charge, updown, shots, hits, kills, score, wave, lives, i, j, tcounter, mcount, dcount
-	INTEGER :: limit, gcounter, spawn(21)
+	INTEGER :: limit, gcounter, spawn(50)
 	INTEGER, intent(in) :: row, col
 	INTEGER, DIMENSION (row,col) :: invader, elaser, laser, powerup, animation
 	LOGICAL :: multiplier, entercommand, cheat(5), select_spawn
@@ -314,7 +319,7 @@ score=0		!set score to 0 points
 wave=1		!set to wave 1
 multiplier=.FALSE.!set score multiplier OFF
 entercommand=.TRUE.!allow for commands to be entered
-command='p'	!set to blank command
+command='o'	!set to blank command
 tcounter=0	!set turn counter to 0
 mcount=0	!set multiplier turn counter to 0
  dcount=0	!set damage boost turn counter to 0
@@ -452,7 +457,7 @@ END IF
 
 IF ((updown>0).AND.(charge/=3)) charge=charge+1	!Increase charge
 gcommand=command	!gcommand is for graphics. This avoids animation glitches caused by the user entering new commands mid-animation
-command='p'	!reset command, otherwise the same command is repeated over and over again until a new one is entered
+command='o'	!reset command, otherwise the same command is repeated over and over again until a new one is entered
 
 RETURN
 END SUBROUTINE commands
@@ -503,7 +508,7 @@ RETURN
 END SUBROUTINE fill_animation
 
 !-------Print Screen-------Print Screen-------Print Screen-------Print Screen-------Print Screen-------Print Screen-------
-SUBROUTINE printscreen(row,col,animation,invader,gcommand,frame,charge,updown,score,wave,lives,control,dframe,&
+SUBROUTINE printscreen(command,row,col,animation,invader,gcommand,frame,charge,updown,score,wave,lives,control,dframe,&
 						endgame,multiplier,damageboost,tcounter,mcount,dcount,limit,num_ordinance)
 	IMPLICIT NONE				!This subroutine handles the beautiful graphics
 	INTEGER :: i, j, flip, rl, frame, charge, updown, score, wave, lives, dframe, endgame, tcounter, mcount, dcount, limit
@@ -511,7 +516,7 @@ SUBROUTINE printscreen(row,col,animation,invader,gcommand,frame,charge,updown,sc
 	INTEGER, DIMENSION(5) :: num_ordinance
 	INTEGER, intent(in) :: row, col
 	INTEGER, DIMENSION (row,col) :: animation, invader	!x==animation; y==invader
-	CHARACTER(1) ::	gcommand
+	CHARACTER(1) ::	command, gcommand
 	CHARACTER(1), DIMENSION(2,5) :: control
 	LOGICAL :: multiplier, damageboost
 
@@ -547,6 +552,13 @@ WRITE(*,6004) '    ⌘ Wave:', wave		!Print Wave
 6004 FORMAT(A,I2.2)
 6005 FORMAT(I1)
 6006 FORMAT(I2)
+
+!IF ((command==control(1,4)).AND.(frame==3)) THEN		!Pause Screen
+!	animation(row/4,col/2-3)=2020; animation(row/4,col/2-2)=2021; animation(row/4,col/2-1)=2022	!flag animations
+!	animation(row/4,col/2)=2023; animation(row/4,col/2+1)=2024; animation(row/4,col/2+2)=2025
+!	animation(row/4,col/2+3)=2026; animation(row/4,col/2+4)=2027
+!END IF
+
 
 WRITE(*,9000,advance='no') '┌'	!Prints Top Border
 DO i=1,3*col+2
@@ -602,6 +614,9 @@ DO i=1,(row-1)		!scale rows (-player row)
 					CASE(2010:2014)
 						anim_index=animation(i,j)
 						call nextwave_2010(dframe,anim_index)
+!					CASE(2020:2027)
+!						anim_index=animation(i,j)
+!						call nextwave_2020(anim_index)
 				END SELECT odd_move
 
 		ELSE			!LASER/ELASER/POWERUP ROW
@@ -647,6 +662,9 @@ DO i=1,(row-1)		!scale rows (-player row)
 					CASE(2010:2014)
 						anim_index=animation(i,j)
 						call nextwave_2010(dframe,anim_index)
+!					CASE(2020:2027)
+!						anim_index=animation(i,j)
+!						call nextwave_2020(anim_index)
 				END SELECT even_move
 		END IF
 		IF (j==col) WRITE(*,9000) ' │'	!Right border
@@ -733,7 +751,7 @@ WRITE(*,9008,advance='no') ' ⁂ (', num_ordinance(1), ')', '✸ (', num_ordinan
 9008 FORMAT(A,I2.2,A,2X,A,I2.2,A,2X,A,I2.2,A)
 
 WRITE(*,9000) ''
-gcommand='p'	!reset gcommand
+gcommand='o'	!reset gcommand
 
 9000 FORMAT(A)	!To allow the advance=no clause
 !NOTE: even for 'unformatted' statements this is needed, otherwise spacing is different
@@ -773,9 +791,11 @@ END
 
 !-------Win Condition-------Win Condition-------Win Condition-------Win Condition-------Win Condition-------
 SUBROUTINE win_condition(invader,elaser,laser,powerup,x00,row,col,charge,updown,wave,endgame,lives,&
-animation,gcommand,frame,score,dframe,multiplier,damageboost,tcounter,mcount,dcount,limit,control,num_ordinance,gametype,rate)
+animation,gcommand,frame,score,dframe,multiplier,damageboost,tcounter,mcount,dcount,limit,control,num_ordinance,gametype,rate,&
+spawn,gcounter)
 	IMPLICIT NONE
-	INTEGER :: x00, charge, updown, wave, i, j, k, endgame, lives, score, frame, dframe, tcounter, mcount, dcount, limit
+	INTEGER :: x00, charge, updown, wave, i, j, k, endgame, lives, score, frame, dframe, tcounter, mcount, dcount
+	INTEGER :: gcounter, spawn(50), limit
 	INTEGER, DIMENSION(5) :: num_ordinance
 	INTEGER, intent(in) :: row, col
 	INTEGER, DIMENSION (row,col) :: invader, elaser, laser, powerup, animation
@@ -810,11 +830,11 @@ IF ((endgame/=0).AND.(gametype/='Endless')) THEN!Check for win condition = check
 		END IF
 		DO k=1,16
 			dframe=dframe+1
-			CALL printscreen(row,col,animation,invader,gcommand,frame,charge,updown,&
+			CALL printscreen(command,row,col,animation,invader,gcommand,frame,charge,updown,&
 		score,wave,lives,control,dframe,endgame,multiplier,damageboost,tcounter,mcount,dcount,limit,num_ordinance)
 			CALL ctimer()	!Timer to allow a pause between frames
 		END DO
-		CALL wave_set(invader,elaser,laser,powerup,x00,row,col,charge,updown,wave,endgame,rate)
+		CALL wave_set(invader,elaser,laser,powerup,x00,row,col,charge,updown,wave,endgame,rate,spawn,gcounter)
 	END IF
 END IF
 
@@ -822,9 +842,9 @@ RETURN
 END SUBROUTINE win_condition
 
 !--------Wave Set--------Wave Set--------Wave Set--------Wave Set--------Wave Set--------
-SUBROUTINE wave_set(invader,elaser,laser,powerup,x00,row,col,charge,updown,wave,endgame,rate)
+SUBROUTINE wave_set(invader,elaser,laser,powerup,x00,row,col,charge,updown,wave,endgame,rate,spawn,gcounter)
 	IMPLICIT NONE
-	INTEGER :: x00, charge, updown, wave, i, j, endgame, p, u_int
+	INTEGER :: x00, charge, updown, wave, i, j, endgame, p, u_int, gcounter, spawn(50)
 	INTEGER, intent(in) :: row, col
 	INTEGER, DIMENSION (row,col) :: invader, elaser, laser, powerup
 	REAL :: u, rate(8)
@@ -834,6 +854,8 @@ elaser=0; laser=0; powerup=0;	!empty matrices
 x00=0		!empty spawn
  charge=3	!set at max weapon charge
 updown=0	!set to idle charge animation
+spawn=0		!clear spawn order
+gcounter=0	!set gcounter to zero
 
 wave_number: SELECT CASE(wave)
 	CASE(2)

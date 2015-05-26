@@ -4,7 +4,7 @@ SUBROUTINE nextwave_2000(dframe,anim_index)
 
 g_nextwave_2000: SELECT CASE(anim_index)
 	CASE(2000)
-		WRITE(*,9001, advance='no') 'NEX' 	!Next
+		WRITE(*,9001, advance='no') 'NEX' 	!Next		*HIT ANY KEY TO UNPAUSE*
 	CASE(2001)
 		WRITE(*,9001, advance='no') 'T W' 
 	CASE(2002)
@@ -46,6 +46,32 @@ END IF
 
 RETURN 
 END SUBROUTINE nextwave_2010
+
+!SUBROUTINE nextwave_2020(anim_index)
+!	INTEGER :: anim_index
+!
+!g_nextwave_2020: SELECT CASE(anim_index)
+!	CASE(2020)
+!		WRITE(*,9001, advance='no') '*HI' 	!*HIT ANY KEY TO UNPAUSE*
+!	CASE(2021)
+!		WRITE(*,9001, advance='no') 'T A' 
+!	CASE(2022)
+!		WRITE(*,9001, advance='no') 'NY '
+!	CASE(2023)
+!		WRITE(*,9001, advance='no') 'KEY'
+!	CASE(2024)
+!		WRITE(*,9001, advance='no') ' TO'
+!	CASE(2025)
+!		WRITE(*,9001, advance='no') ' UN'
+!	CASE(2026)
+!		WRITE(*,9001, advance='no') 'PAU' 
+!	CASE(2027)
+!		WRITE(*,9001, advance='no') 'SE*' 
+!	END SELECT g_nextwave_2020
+!9001 FORMAT(A)
+!
+!RETURN 
+!END SUBROUTINE nextwave_2020
 
 
 !-------ENDING 1000------ENDING 1000-------ENDING 1000-------ENDING 1000-------

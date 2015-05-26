@@ -14,7 +14,7 @@ manim=.FALSE.	!set menu animation flag off
 rblank=.TRUE.	!set to read blank (i.e. press enter, no key required)
  cheat=.FALSE.	!set all chets to De-Active -> 1 = Year o' Plenty; 2 = Fiver
 naming=.FALSE.	!set naming high score to off
-control(1,1)='w'; control(1,2)='d'; control(1,3)='a'	!shoot; right; left
+control(1,1)='w'; control(1,2)='d'; control(1,3)='a'; control(1,4)='p'				!shoot; right; left; pause
 control(2,1)='1'; control(2,2)='2'; control(2,3)='3'; control(2,4)='4'; control(2,5)='5'	!scatterhots; vaporizer; missile
 difficulty=1	!set difficulty -> 0 = Easy; 1 = Normal; 2 = Brutal
 gametype='Standard'	!set gametype
@@ -406,12 +406,21 @@ option_selector: SELECT CASE(wmenu)
 				control(2,3)=command	!read "missile" key
 				manim=.FALSE.	!de-flag menu animation
 			END IF
+		ELSE IF (command=='7') THEN
+			IF (manim .EQV. .FALSE.) THEN
+				wchoice=7	!flag choice
+				manim=.TRUE.	!flag animation on
+			ELSE
+				READ(*,*) command!read command
+				control(1,4)=command	!read "pause" key
+				manim=.FALSE.	!de-flag menu animation
+			END IF
 		ELSE IF (command=='9') THEN
 			IF (manim .EQV. .FALSE.) THEN
 				wchoice=9	!flag choice
 				manim=.TRUE.	!flag animation on
 			ELSE
-				control(1,1)='w'; control(1,2)='d'; control(1,3)='a'
+				control(1,1)='w'; control(1,2)='d'; control(1,3)='a'; control(1,4)='p'
 				control(2,1)='1'; control(2,2)='2'; control(2,3)='3'
 				manim=.FALSE.	!de-flag menu animation
 			END IF
@@ -647,7 +656,7 @@ menu_selector: SELECT CASE(wmenu)
 		string(k)="by Kevin O'Mara"
 		length(k)=15;	row_num(k)=20; k=k+1
 
-		string(k)='version 1.9.6'
+		string(k)='version 1.9.7'
 		length(k)=13;	row_num(k)=row+3; k=k+1
 
 		last=k-1
@@ -1017,89 +1026,98 @@ menu_selector: SELECT CASE(wmenu)
 		last=13
 
 	CASE('Controls')	!CONTROLS
-		string(1)='⋲      CONTROLS     ⋺'
-		length(1)=21;	row_num(1)=3
+		string(k)='⋲      CONTROLS     ⋺'
+		length(k)=21;	row_num(k)=3; k=k+1
 
-		string(2)='Select a Command below to enter a new key.'
-		length(2)=42;	row_num(2)=5
+		string(k)='Select a Command below to enter a new key.'
+		length(k)=42;	row_num(k)=5; k=k+1
 
 		IF ((manim .EQV. .TRUE.).AND.(wchoice==1)) THEN
-			string(3)='(1) Shoot: ' // control(1,1) // '→ _'
-			length(3)=15
+			string(k)='(1) Shoot: ' // control(1,1) // '→ _'
+			length(k)=15
 		ELSE
-			string(3)='(1) Shoot: ' // control(1,1)
-			length(3)=12
+			string(k)='(1) Shoot: ' // control(1,1)
+			length(k)=12
 		END IF
-		row_num(3)=7
+		row_num(k)=7; k=k+1
 
 		IF ((manim .EQV. .TRUE.).AND.(wchoice==2)) THEN
-			string(4)='(2) Right: ' // control(1,2) // '→ _'
-			length(4)=15
+			string(k)='(2) Right: ' // control(1,2) // '→ _'
+			length(k)=15
 		ELSE
-			string(4)='(2) Right: ' // control(1,2)
-			length(4)=12
+			string(k)='(2) Right: ' // control(1,2)
+			length(k)=12
 		END IF
-		row_num(4)=8
+		row_num(k)=8; k=k+1
 
 		IF ((manim .EQV. .TRUE.).AND.(wchoice==3)) THEN
-			string(5)='(3) Left: ' // control(1,3) // '→ _'
-			length(5)=14
+			string(k)='(3) Left: ' // control(1,3) // '→ _'
+			length(k)=14
 		ELSE
-			string(5)='(3) Left: ' // control(1,3)
-			length(5)=11
+			string(k)='(3) Left: ' // control(1,3)
+			length(k)=11
 		END IF
-		row_num(5)=9
+		row_num(k)=9; k=k+1
 
-		string(6)='✫ Special Ordinance ✫'
-		length(6)=21
-		row_num(6)=11
+		string(k)='✫ Special Ordinance ✫'
+		length(k)=21
+		row_num(k)=11; k=k+1
 
 		IF ((manim .EQV. .TRUE.).AND.(wchoice==4)) THEN
-			string(7)='(4) Scattershot: ' // control(2,1) // '→ _'
-			length(7)=21
+			string(k)='(4) Scattershot: ' // control(2,1) // '→ _'
+			length(k)=21
 		ELSE
-			string(7)='(4) Scattershot: ' // control(2,1)
-			length(7)=18
+			string(k)='(4) Scattershot: ' // control(2,1)
+			length(k)=18
 		END IF
-		row_num(7)=12
+		row_num(k)=12; k=k+1
 
 		IF ((manim .EQV. .TRUE.).AND.(wchoice==5)) THEN
-			string(8)='(5) Vaporizer: ' // control(2,2) // '→ _'
-			length(8)=19
+			string(k)='(5) Vaporizer: ' // control(2,2) // '→ _'
+			length(k)=19
 		ELSE
-			string(8)='(5) Vaporizer: ' // control(2,2)
-			length(8)=16
+			string(k)='(5) Vaporizer: ' // control(2,2)
+			length(k)=16
 		END IF
-		row_num(8)=13
+		row_num(k)=13; k=k+1
 
 		IF ((manim .EQV. .TRUE.).AND.(wchoice==6)) THEN
-			string(9)='(6) Missile: ' // control(2,3) // '→ _'
-			length(9)=17
+			string(k)='(6) Missile: ' // control(2,3) // '→ _'
+			length(k)=17
 		ELSE
-			string(9)='(6) Missile: ' // control(2,3)
-			length(9)=14
+			string(k)='(6) Missile: ' // control(2,3)
+			length(k)=14
 		END IF
-		row_num(9)=14
+		row_num(k)=14; k=k+1
+
+		IF ((manim .EQV. .TRUE.).AND.(wchoice==7)) THEN
+			string(k)='(7) Pause: ' // control(1,4) // '→ _'
+			length(k)=15
+		ELSE
+			string(k)='(7) Pause: ' // control(1,4)
+			length(k)=12
+		END IF
+		row_num(k)=row-1; k=k+1
 
 		IF ((manim .EQV. .TRUE.).AND.(wchoice==9)) THEN
-			string(10)='✰ ✰ ✰ (9) Reset Controls ✰ ✰ ✰'
-			length(10)=30
+			string(k)='✰ ✰ ✰ (9) Reset Controls ✰ ✰ ✰'
+			length(k)=30
 		ELSE
-			string(10)='(9) Reset Controls'
-			length(10)=18
+			string(k)='(9) Reset Controls'
+			length(k)=18
 		END IF
-		row_num(10)=row+1
+		row_num(k)=row+1; k=k+1
 
 		IF ((manim .EQV. .TRUE.).AND.(wchoice==0)) THEN
-			string(11)='✰ ✰ (0) Back to Main Menu ✰ ✰'
-			length(11)=29
+			string(k)='✰ ✰ (0) Back to Main Menu ✰ ✰'
+			length(k)=29
 		ELSE
-			string(11)='(0) Back to Main Menu'
-			length(11)=21
+			string(k)='(0) Back to Main Menu'
+			length(k)=21
 		END IF
-		row_num(11)=row+3
+		row_num(k)=row+3; k=k+1
 
-		last=11
+		last=k-1
 
 	CASE('Guide_Main')		!Guide Main
 		string(1)='⋲       GUIDE       ⋺'
