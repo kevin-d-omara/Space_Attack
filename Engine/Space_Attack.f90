@@ -14,10 +14,11 @@
 !	>gfortran -c graphics_sub.f90
 !	>gfortran -c primaries_sub.f90
 !	>gfortran -c lose_animation.f90
-!	>gfortran -fopenmp sys_keyin.o graphics_sub.o primaries_sub.o lose_animation.o Space_Attack.o
+!	>gfortran -c menus.f90
+!	>gfortran -fopenmp sys_keyin.o graphics_sub.o primaries_sub.o lose_animation.o menus.o Space_Attack.o
 !	>./a.out	=) enjoy!
 !
-! Latest Version: 1.9.7
+! Latest Version: 1.9.7.2
 !
 !	Changelog:
 !		//(1.0.0) //02/25/15 	created
@@ -50,9 +51,12 @@
 !		//(1.9.6) //05/23/15	added diagonal moving powerups
 !		//(1.9.7) //05/26/15	added game pause, mechanics for mid-wave spawning in Standard, tweaked spawn rate and bonus
 !					of diagonal powerups, & modularized gauntlet spawn packages
+!						-organized files into folders and updated makefile & scores
+!						-added cheat 3: "Hyper Jump" to allow skipping levels
+!			  //06/02/15		-fixed issues with "Hyper Jump"
 !
-!				TO DO:	optimize timing so game runs smoothly, make bouncing powerups
-!				BUGS:	forcefield destruction doesn't always work right
+!				TO DO:	optimize timing so game runs smoothly; fix Hyper Jump and look into cheats between levels
+!				BUGS:	forcefield destruction doesn't always work right; Hyper Jump cannot be reverted
 !				BONUS: 2-player vs. computer AND 1 vs. 1 (alien overlord spawning invaders!!!)
 !
 
@@ -77,7 +81,7 @@ PROGRAM array_invaders
 	INTEGER ::  score, wincon, wave, last, length(row), row_num(row), lives, eplaser, flop, score2
 	INTEGER :: tcounter, mcount, dcount, yesno=1, wchoice, total, ordinancepoints, gcounter
 	INTEGER :: num_ordinance(5), spawn(50), int_addcounter, maxgrade, ptime, pcount, finalscore
-	INTEGER :: ranking
+	INTEGER :: ranking, cheatWave
 	INTEGER, DIMENSION (row,col) :: animation, invader, laser, elaser, powerup
 	REAL :: start, finish, rate(8), float_addcounter, accuracy_mod, difficulty_mod, accuracy
 	CHARACTER(1) ::	command, gcommand		 !C(LEN=1) == C(1) == C
@@ -93,7 +97,7 @@ PROGRAM array_invaders
 ! ---------------------------------------------------------------------------------------------
 
 CALL menu_initialize(wmenu,wchoice,endgame,manim,rblank,control,difficulty,gametype,num_ordinance,&
-							ordinancepoints,yesno,cheat,naming)
+							ordinancepoints,yesno,cheat,naming,cheatWave)
 DO WHILE(yesno==1)	!GAME START
 	DO WHILE ((wmenu/='START!').AND.(wmenu/='EXIT'))	!MENU SEQUENCE					!!select menu and load strings
 		CALL select_menu(string,length,row_num,last,row,col,wmenu,wchoice,manim,control,&
@@ -102,7 +106,7 @@ DO WHILE(yesno==1)	!GAME START
 		IF (manim .EQV. .TRUE.) THEN						!IF menu animated
 			CALL ctimer()						!determine which option was selected
 			CALL which_option(command,wchoice,wmenu,manim,rblank,control,difficulty,&
-					gametype,num_ordinance,total,ordinancepoints,yesno,lives,cheat)
+					gametype,num_ordinance,total,ordinancepoints,yesno,lives,cheat,cheatWave)
 			CALL select_menu(string,length,row_num,last,row,col,wmenu,wchoice,manim,control,&
 					difficulty,gametype,num_ordinance,total,ordinancepoints,lives,cheat,score_array,naming,ranking)
 			CALL print_menu(row,col,string,length,row_num,last)
@@ -115,11 +119,11 @@ DO WHILE(yesno==1)	!GAME START
 			END IF
 		END IF											!determine which option was selected
 		CALL which_option(command,wchoice,wmenu,manim,rblank,control,difficulty,&
-							gametype,num_ordinance,total,ordinancepoints,yesno,lives,cheat)
+						gametype,num_ordinance,total,ordinancepoints,yesno,lives,cheat,cheatWave)
 	END DO				!END MENU SEQUENCE
 	IF (yesno==0) GOTO 10	!Exit Program
 	CALL initialize(invader,elaser,laser,powerup,animation,x00,row,col,endgame,frame,charge,updown,shots,hits,kills,score,wave,lives,&
-		multiplier,tcounter,mcount,dcount,entercommand,command,cheat,rate,limit,gcounter,select_spawn,spawn,gametype)
+		multiplier,tcounter,mcount,dcount,entercommand,command,cheat,rate,limit,gcounter,select_spawn,spawn,gametype,cheatWave)
 	CALL printscreen(command,row,col,animation,invader,gcommand,frame,charge,updown,score,wave,lives,control,&
 						dframe,endgame,multiplier,damageboost,tcounter,mcount,dcount,limit,num_ordinance)
 
@@ -258,10 +262,10 @@ DO WHILE(yesno==1)	!GAME START
 		score_array(ranking,1)=player_name
 
 		IF (gametype=='Standard') THEN				!Open appropriate data file
-			OPEN(unit=100, file='.scores_standard.dat', status='unknown')
+			OPEN(unit=100, file='Settings/.scores_standard.dat', status='unknown')
 			k=100
 		ELSE IF (gametype=='Endless') THEN
-			OPEN(unit=200, file='.scores_endless.dat', status='unknown')
+			OPEN(unit=200, file='Settings/.scores_endless.dat', status='unknown')
 			k=200
 		END IF
 
@@ -293,12 +297,12 @@ END PROGRAM array_invaders
 
 !--------Initialize positions--------Initialize Positions--------Initialize positions--------Initialize Positions--------
 SUBROUTINE initialize(invader,elaser,laser,powerup,animation,x00,row,col,endgame,frame,charge,updown,shots,hits,kills,score,&
-wave,lives,multiplier,tcounter,mcount,dcount,entercommand,command,cheat,rate,limit,gcounter,select_spawn,spawn,gametype)
+wave,lives,multiplier,tcounter,mcount,dcount,entercommand,command,cheat,rate,limit,gcounter,select_spawn,spawn,gametype,cheatWave)
 	USE settings
 	IMPLICIT NONE
 	REAL ::  rate(8), u
 	INTEGER :: x00, endgame, frame, charge, updown, shots, hits, kills, score, wave, lives, i, j, tcounter, mcount, dcount
-	INTEGER :: limit, gcounter, spawn(50)
+	INTEGER :: limit, gcounter, spawn(50), cheatWave
 	INTEGER, intent(in) :: row, col
 	INTEGER, DIMENSION (row,col) :: invader, elaser, laser, powerup, animation
 	LOGICAL :: multiplier, entercommand, cheat(5), select_spawn
@@ -316,7 +320,7 @@ hits=0		!set to 0 hits
 kills=0		!set to 0 kills
 updown=0	!set to idle charge animation
 score=0		!set score to 0 points
-wave=1		!set to wave 1
+wave=0		!set to wave 0 (kicked up to wave 1 in "wave_set")
 multiplier=.FALSE.!set score multiplier OFF
 entercommand=.TRUE.!allow for commands to be entered
 command='o'	!set to blank command
@@ -350,17 +354,11 @@ ELSE				!Easy
 	rate=rate*0.75	!75% rate
 	rate(1)=rate(1)*1.25/0.75
 END IF
-IF (cheat(2) .EQV. .TRUE.) lives=5	!cheat(2)==.TRUE. -> Fiver Active
 
-CALL init_random_seed()	!randomly pick a new random number seed
-
-IF (gametype=='Standard') THEN
-	DO i=3,7,2			!Spawns the Wave 1 Invaders!
-		DO j=5,11
-			invader(i,j)=11
-		END DO
-	END DO
-END IF
+CALL init_random_seed()		!randomly pick a new random number seed
+IF (cheat(2) .EQV. .TRUE.) lives=5						!cheat(2)==.TRUE. -> Fiver Active
+IF ((gametype=='Standard').AND.(cheat(3) .EQV. .TRUE.)) wave=cheatWave-1	!Skip levels via Hyper Jump cheat
+CALL wave_set(invader,elaser,laser,powerup,x00,row,col,charge,updown,wave,endgame,rate,spawn,gcounter)
 
 	!Print initial position
 CALL execute_command_line('clear')	!Clear screen before printing
@@ -812,7 +810,7 @@ IF (invader((row-2),col)/=0) THEN	!Check final Invader position (bottom right)
 END IF
 IF (lives==0) endgame=0
 
-IF ((endgame/=0).AND.(gametype/='Endless')) THEN!Check for win condition = check if maximum value of gamespace == 0 (i.e. no Invaders left)
+IF ((endgame/=0).AND.(gametype/='Endless').AND.(gcounter>10)) THEN	!Check if maximum value of gamespace == 0 (i.e. no Invaders left)
 	IF (MAXVAL(invader)==0) THEN
 		frame=3; dframe=0	!freeze final positions & set secondary frame count
 		IF (wave<=8) THEN	!Next Wave Incoming‼
@@ -844,10 +842,11 @@ END SUBROUTINE win_condition
 !--------Wave Set--------Wave Set--------Wave Set--------Wave Set--------Wave Set--------
 SUBROUTINE wave_set(invader,elaser,laser,powerup,x00,row,col,charge,updown,wave,endgame,rate,spawn,gcounter)
 	IMPLICIT NONE
-	INTEGER :: x00, charge, updown, wave, i, j, endgame, p, u_int, gcounter, spawn(50)
+	INTEGER :: x00, charge, updown, wave, i, j, k, endgame, p, u_int, gcounter, spawn(50), a, b
 	INTEGER, intent(in) :: row, col
 	INTEGER, DIMENSION (row,col) :: invader, elaser, laser, powerup
 	REAL :: u, rate(8)
+	LOGICAL :: spawnPower
 
 wave=wave+1	!increase wave count
 elaser=0; laser=0; powerup=0;	!empty matrices
@@ -858,6 +857,13 @@ spawn=0		!clear spawn order
 gcounter=0	!set gcounter to zero
 
 wave_number: SELECT CASE(wave)
+	CASE(1)					!Invaders!
+		DO i=3,7,2
+			DO j=5,11
+				invader(i,j)=11
+			END DO
+		END DO
+		spawnPower=.FALSE.
 	CASE(2)
 		DO i=7,7,2			!Smiley
 			DO j=5,11
@@ -866,6 +872,7 @@ wave_number: SELECT CASE(wave)
 		END DO
 		invader(3,6)=21; invader(3,10)=21
 		powerup(4,8)=202
+		spawnPower=.FALSE.
 	CASE(3)					!Heavy Bombardment
 		DO j=1,col,5
 			invader(1,j)=32
@@ -875,27 +882,8 @@ wave_number: SELECT CASE(wave)
 				invader(i,j)=11
 			END DO
 		END DO
-		DO i=4,10,2
-			DO j=1,col
-				CALL random_number(u)
-				IF (u<rate(1)) THEN
-					CALL random_number(u)
-					u_int=u*100
-					powerup_direction3: SELECT CASE(u_int)
-						CASE(0:10)
-							powerup(i,j)=312
-						CASE(11:20)
-							powerup(i,j)=322
-						CASE(21:30)
-							powerup(i,j)=412
-						CASE(31:40)
-							powerup(i,j)=422
-						CASE DEFAULT
-							powerup(i,j)=202
-						END SELECT powerup_direction3
-				END IF
-			END DO
-		END DO
+		spawnPower=.TRUE.
+		a=4; b=10
 	CASE(4)					!Pepper Jack
 		DO j=1,col,5
 			invader(1,j)=42
@@ -905,118 +893,47 @@ wave_number: SELECT CASE(wave)
 				invader(i,j)=11
 			END DO
 		END DO
-		DO i=4,10,2
-			DO j=1,col
-				CALL random_number(u)
-				IF (u<rate(1)) THEN
-					CALL random_number(u)
-					u_int=u*100
-					powerup_direction4: SELECT CASE(u_int)
-						CASE(0:10)
-							powerup(i,j)=312
-						CASE(11:20)
-							powerup(i,j)=322
-						CASE(21:30)
-							powerup(i,j)=412
-						CASE(31:40)
-							powerup(i,j)=422
-						CASE DEFAULT
-							powerup(i,j)=202
-						END SELECT powerup_direction4
-				END IF
-			END DO
-		END DO
+		spawnPower=.TRUE.
+		a=4; b=10
 	CASE(5)					!Escort
-		invader(5,col/2-3)=52; invader(5,col/2+2)=52
-		DO j=col/2-5,col/2-1
-			powerup(6,j)=291
-		END DO
-		DO j=col/2,col/2+4
-			powerup(6,j)=291
-		END DO
 		DO j=col/2-4,col/2+3
 			invader(1,j)=11
 		END DO
-		DO i=8,12,2
-			DO j=1,col
-				CALL random_number(u)
-				IF (u<rate(1)) THEN
-					CALL random_number(u)
-					u_int=u*100
-					powerup_direction5: SELECT CASE(u_int)
-						CASE(0:10)
-							powerup(i,j)=312
-						CASE(11:20)
-							powerup(i,j)=322
-						CASE(21:30)
-							powerup(i,j)=412
-						CASE(31:40)
-							powerup(i,j)=422
-						CASE DEFAULT
-							powerup(i,j)=202
-						END SELECT powerup_direction5
-				END IF
-			END DO
+		invader(3,col/2-3)=52; invader(3,col/2+2)=52
+		DO j=col/2-5,col/2-1
+			powerup(4,j)=291
 		END DO
+		DO j=col/2,col/2+4
+			powerup(4,j)=291
+		END DO
+		spawnPower=.TRUE.
+		a=8; b=12
 	CASE(6)					!Warp Time
-		DO i=1,5,2
-			DO j=4,col-3
+		j=0
+		DO k=1,3
+			DO i=1,9
+				j=j+1
 				CALL random_number(u)
 				IF (u>1-6*rate(1)) THEN
-					invader(i,j)=61
+					spawn(j)=61
 				ELSE
-					invader(i,j)=11
+					spawn(j)=11
 				END IF
 			END DO
-		END DO
-		DO i=4,10,2
-			DO j=1,col
-				CALL random_number(u)
-				IF (u<rate(1)) THEN
-					CALL random_number(u)
-					u_int=u*100
-					powerup_direction6: SELECT CASE(u_int)
-						CASE(0:10)
-							powerup(i,j)=312
-						CASE(11:20)
-							powerup(i,j)=322
-						CASE(21:30)
-							powerup(i,j)=412
-						CASE(31:40)
-							powerup(i,j)=422
-						CASE DEFAULT
-							powerup(i,j)=202
-						END SELECT powerup_direction6
-				END IF
+			DO i=1,6
+				j=j+1
 			END DO
 		END DO
+		spawnPower=.TRUE.
+		a=4; b=10
 	CASE(7)					!Bay Doors
-		invader(1,2)=74; invader(1,14)=74
+		invader(1,2)=74; invader(1,4)=74
 		invader(1,3)=52
 		DO j=1,5
 			powerup(2,j)=291
 		END DO
-		DO i=4,12,2
-			DO j=1,col
-				CALL random_number(u)
-				IF (u<rate(1)) THEN
-					CALL random_number(u)
-					u_int=u*100
-					powerup_direction7: SELECT CASE(u_int)
-						CASE(0:10)
-							powerup(i,j)=312
-						CASE(11:20)
-							powerup(i,j)=322
-						CASE(21:30)
-							powerup(i,j)=412
-						CASE(31:40)
-							powerup(i,j)=422
-						CASE DEFAULT
-							powerup(i,j)=202
-						END SELECT powerup_direction7
-				END IF
-			END DO
-		END DO
+		spawnPower=.TRUE.
+		a=4; b=12
 	CASE(8)					!Death Star
 		invader(1,2)=32; invader(1,col-3)=42
 		invader(1,col/2)=32
@@ -1027,53 +944,39 @@ wave_number: SELECT CASE(wave)
 		DO j=col-5,col-1
 			powerup(2,j)=291
 		END DO
-		DO i=2,14,2
-			DO j=1,col
-				CALL random_number(u)
-				IF (u<rate(1)) THEN
-					CALL random_number(u)
-					u_int=u*100
-					powerup_direction8: SELECT CASE(u_int)
-						CASE(0:10)
-							powerup(i,j)=312
-						CASE(11:20)
-							powerup(i,j)=322
-						CASE(21:30)
-							powerup(i,j)=412
-						CASE(31:40)
-							powerup(i,j)=422
-						CASE DEFAULT
-							powerup(i,j)=202
-						END SELECT powerup_direction8
-				END IF
-			END DO
-		END DO
+		spawnPower=.TRUE.
+		a=2; b=14
 	CASE(9)					!Final Fight
 		invader(1,1)=87
-		DO i=2,14,2
-			DO j=1,col
-				CALL random_number(u)
-				IF (u<rate(1)) THEN
-					CALL random_number(u)
-					u_int=u*100
-					powerup_direction9: SELECT CASE(u_int)
-						CASE(0:10)
-							powerup(i,j)=312
-						CASE(11:20)
-							powerup(i,j)=322
-						CASE(21:30)
-							powerup(i,j)=412
-						CASE(31:40)
-							powerup(i,j)=422
-						CASE DEFAULT
-							powerup(i,j)=202
-						END SELECT powerup_direction9
-				END IF
-			END DO
-		END DO
+		spawnPower=.TRUE.
+		a=2; b=14
 	CASE DEFAULT
 		endgame=9
-	END SELECT wave_number
+END SELECT wave_number
+
+IF (spawnPower .EQV. .TRUE.) THEN
+	DO i=a,b,2		!Spawn powerups
+		DO j=1,col
+			CALL random_number(u)
+			IF (u<rate(1)) THEN
+				CALL random_number(u)
+				u_int=u*100
+				powerup_direction7: SELECT CASE(u_int)
+					CASE(0:10)
+						powerup(i,j)=312
+					CASE(11:20)
+						powerup(i,j)=322
+					CASE(21:30)
+						powerup(i,j)=412
+					CASE(31:40)
+						powerup(i,j)=422
+					CASE DEFAULT
+						powerup(i,j)=202
+					END SELECT powerup_direction7
+			END IF
+		END DO
+	END DO
+END IF
 
 RETURN
 END SUBROUTINE wave_set
@@ -1208,10 +1111,10 @@ SUBROUTINE determine_ranking(score_array,gametype,accuracy,finalscore,wave,kills
 	
 
 	IF (gametype=='Standard') THEN			!Open appropriate data file
-		OPEN(unit=100, file='.scores_standard.dat', status='unknown')
+		OPEN(unit=100, file='Settings/.scores_standard.dat', status='unknown')
 		k=100
 	ELSE IF (gametype=='Endless') THEN
-		OPEN(unit=200, file='.scores_endless.dat', status='unknown')
+		OPEN(unit=200, file='Settings/.scores_endless.dat', status='unknown')
 		k=200
 	END IF
 
@@ -1257,9 +1160,9 @@ SUBROUTINE determine_ranking(score_array,gametype,accuracy,finalscore,wave,kills
 	CLOSE(k)
 
 	IF (k==100) THEN				!Open appropriate data file
-		OPEN(unit=100, file='.scores_standard.dat', status='unknown')
+		OPEN(unit=100, file='Settings/.scores_standard.dat', status='unknown')
 	ELSE
-		OPEN(unit=200, file='.scores_endless.dat', status='unknown')
+		OPEN(unit=200, file='Settings/.scores_endless.dat', status='unknown')
 	END IF
 
 	DO i=1,10

@@ -1,10 +1,10 @@
 ! This block initializes all the relevant variables before loading the menu sequence.
 SUBROUTINE menu_initialize(wmenu,wchoice,endgame,manim,rblank,control,difficulty,gametype,num_ordinance,ordinancepoints,&
-												yesno,cheat,naming)
+											yesno,cheat,naming,cheatWave)
 	IMPLICIT NONE
 	CHARACTER(10) :: wmenu, gametype
 	CHARACTER(1), DIMENSION(2,5) ::	control
-	INTEGER :: wchoice, endgame, ordinancepoints, yesno, num_ordinance(5), difficulty
+	INTEGER :: wchoice, endgame, ordinancepoints, yesno, num_ordinance(5), difficulty, cheatWave
 	LOGICAL :: rblank, manim, cheat(5), naming
 
 wmenu='Intro'	!set to intro screen
@@ -12,7 +12,8 @@ wchoice=1	!set to default choice
 endgame=0	!set to game off
 manim=.FALSE.	!set menu animation flag off
 rblank=.TRUE.	!set to read blank (i.e. press enter, no key required)
- cheat=.FALSE.	!set all chets to De-Active -> 1 = Year o' Plenty; 2 = Fiver
+ cheat=.FALSE.	!set all chets to De-Active -> 1 = Year o' Plenty; 2 = Fiver; 3 = Hyper Jump
+ cheatWave=0	!set cheat "wave select" to zero
 naming=.FALSE.	!set naming high score to off
 control(1,1)='w'; control(1,2)='d'; control(1,3)='a'; control(1,4)='p'				!shoot; right; left; pause
 control(2,1)='1'; control(2,2)='2'; control(2,3)='3'; control(2,4)='4'; control(2,5)='5'	!scatterhots; vaporizer; missile
@@ -30,12 +31,12 @@ END SUBROUTINE menu_initialize
 ! It then decides the appropriate course of action, either a) flag animation for selection or b) set wmenu
 ! to the next menu selected.
 SUBROUTINE which_option(command,wchoice,wmenu,manim,rblank,control,difficulty,gametype,num_ordinance,&
-								total,ordinancepoints,yesno,lives,cheat)
+							total,ordinancepoints,yesno,lives,cheat,cheatWave)
 	IMPLICIT NONE
 	CHARACTER(1) :: command
 	CHARACTER(1), DIMENSION(2,5) :: control
 	CHARACTER(10) :: wmenu, gametype
-	INTEGER :: wchoice, total, ordinancepoints, yesno, lives, num_ordinance(5), difficulty, i, j
+	INTEGER :: wchoice, total, ordinancepoints, yesno, lives, num_ordinance(5), difficulty, i, j, cheatWave
 	LOGICAL :: manim, rblank, cheat(5)
 
 option_selector: SELECT CASE(wmenu)
@@ -115,7 +116,7 @@ option_selector: SELECT CASE(wmenu)
 				wchoice=7	!flag choice
 				manim=.TRUE.	!flag animation on
 			ELSE
-				OPEN(unit=100, file='.scores_standard.dat', status='unknown')
+				OPEN(unit=100, file='Settings/.scores_standard.dat', status='unknown')
 				DO i=1,10
 					DO j=1,6
 						reset_standard: SELECT CASE(j)
@@ -162,7 +163,7 @@ option_selector: SELECT CASE(wmenu)
 				wchoice=7	!flag choice
 				manim=.TRUE.	!flag animation on
 			ELSE
-				OPEN(unit=200, file='.scores_endless.dat', status='unknown')
+				OPEN(unit=200, file='Settings/.scores_endless.dat', status='unknown')
 				DO i=1,10
 					DO j=1,6
 						reset_endless: SELECT CASE(j)
@@ -230,18 +231,17 @@ option_selector: SELECT CASE(wmenu)
 				END IF
 				manim=.FALSE.	!de-flag menu animation
 			END IF
-!		ELSE IF (command=='3') THEN
-!			IF (manim .EQV. .FALSE.) THEN
-!				wchoice=3	!flag choice
-!				manim=.TRUE.	!flag animation on
-!			ELSE
-!				IF (cheat3 .EQV. .FALSE.) THEN
-!					cheat3=.TRUE.		!Level Skip
-!				ELSE
-!					cheat3=.FALSE.
-!				END IF
-!				manim=.FALSE.	!de-flag menu animation
-!			END IF	
+		ELSE IF (command=='3') THEN
+			IF (manim .EQV. .FALSE.) THEN
+				wchoice=3	!flag choice
+				manim=.TRUE.	!flag animation on
+			ELSE
+				cheat(3)=.TRUE.
+				READ(*,10) cheatWave
+				10 FORMAT(I1)
+				IF (cheatWave<=1) cheat(3)=.FALSE.
+				manim=.FALSE.	!de-flag menu animation
+			END IF
 		ELSE IF (command=='0') THEN
 			IF (manim .EQV. .FALSE.) THEN
 				wchoice=0	!flag choice
@@ -656,8 +656,8 @@ menu_selector: SELECT CASE(wmenu)
 		string(k)="by Kevin O'Mara"
 		length(k)=15;	row_num(k)=20; k=k+1
 
-		string(k)='version 1.9.7'
-		length(k)=13;	row_num(k)=row+3; k=k+1
+		string(k)='version 1.9.7.2'
+		length(k)=15;	row_num(k)=row+3; k=k+1
 
 		last=k-1
 
@@ -725,7 +725,7 @@ menu_selector: SELECT CASE(wmenu)
 		string(k)='Name     Score  Diff.   Kills  Acc.  Wave'
 		length(k)=41;	row_num(k)=6; k=k+1
 
-		OPEN(unit=100, file='.scores_standard.dat', status='old')	!Open Score File
+		OPEN(unit=100, file='Settings/.scores_standard.dat', status='old')	!Open Score File
 		DO i=1,10
 			DO j=1,6
 				READ(100,5001) score_array(i,j)			!Record information
@@ -799,7 +799,7 @@ menu_selector: SELECT CASE(wmenu)
 		string(k)='Name     Score  Diff.   Kills   Acc.'
 		length(k)=36;	row_num(k)=6; k=k+1
 
-		OPEN(unit=200, file='.scores_endless.dat', status='old')	!Open Score File
+		OPEN(unit=200, file='Settings/.scores_endless.dat', status='old')	!Open Score File
 		DO i=1,10
 			DO j=1,6
 				READ(200,5001) score_array(i,j)			!Record information
@@ -863,38 +863,47 @@ menu_selector: SELECT CASE(wmenu)
 		last=k-1
 
 	CASE('Cheats')		!CHEATS
-		string(1)='⋲         Cheats        ⋺'
-		length(1)=25;	row_num(1)=3
+		string(k)='⋲         Cheats        ⋺'
+		length(k)=25;	row_num(k)=3; k=k+1
 
 		IF (cheat(1) .EQV. .FALSE.) THEN
-			string(2)="(1) Year o' Plenty: De-Active"
-			length(2)=29
+			string(k)="(1) Year o' Plenty: De-Active"
+			length(k)=29
 
 		ELSE
-			string(2)="(1) Year o' Plenty: Active"
-			length(2)=26
+			string(k)="(1) Year o' Plenty: Active"
+			length(k)=26
 		END IF
-		row_num(2)=6
+		row_num(k)=6; k=k+1
 
 		IF (cheat(2) .EQV. .FALSE.) THEN
-			string(3)='(2) Fiver: De-Active'
-			length(3)=20
+			string(k)='(2) Fiver: De-Active'
+			length(k)=20
 		ELSE
-			string(3)='(2) Fiver: Active'
-			length(3)=17
+			string(k)='(2) Fiver: Active'
+			length(k)=17
 		END IF
-		row_num(3)=8
+		row_num(k)=8; k=k+1
+
+		IF (cheat(3) .EQV. .FALSE.) THEN
+			string(k)='(3) Hyper Jump: De-Active'
+			length(k)=25
+		ELSE
+			string(k)='(3) Hyper Jump: Active'
+			length(k)=22
+		END IF
+		row_num(k)=10; k=k+1
 
 		IF ((manim .EQV. .TRUE.).AND.(wchoice==0)) THEN
-			string(4)='✰ ✰ (0) Back to Main Menu ✰ ✰'
-			length(4)=29
+			string(k)='✰ ✰ (0) Back to Main Menu ✰ ✰'
+			length(k)=29
 		ELSE
-			string(4)='(0) Back to Main Menu'
-			length(4)=21
+			string(k)='(0) Back to Main Menu'
+			length(k)=21
 		END IF
-		row_num(4)=row+3
+		row_num(k)=row+3; k=k+1
 
-		last=4
+		last=k-1
 
 	CASE('Prep')		!PREP
 		string(1)='⋲   Prepare for Combat  ⋺'
