@@ -280,7 +280,7 @@ DO WHILE(yesno==1)	!GAME START
 		yesno=0		!Exit Game
 	END IF
 
-
+	cheat=.FALSE.	!reset all cheats
 	command='o'	!if the player decides to play again this prevents a pre-set first command
 10 END DO
 END PROGRAM array_invaders
