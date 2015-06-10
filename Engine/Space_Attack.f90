@@ -18,7 +18,7 @@
 !	>gfortran -fopenmp sys_keyin.o graphics_sub.o primaries_sub.o lose_animation.o menus.o Space_Attack.o
 !	>./a.out	=) enjoy!
 !
-! Latest Version: 1.9.7.2
+! Latest Version: 1.9.7.3
 !
 !	Changelog:
 !		//(1.0.0) //02/25/15 	created
@@ -53,7 +53,10 @@
 !					of diagonal powerups, & modularized gauntlet spawn packages
 !						-organized files into folders and updated makefile & scores
 !						-added cheat 3: "Hyper Jump" to allow skipping levels
-!			  //06/02/15		-fixed issues with "Hyper Jump"
+!			  //06/02/15		-fixed issues with "Hyper Jump"; cleaned up wave_set powerups, stopped cheats between games
+!			  //06/09/15		-fixed bug with Endless gametype still spawning wave 1
+!						-did preliminary testing with -pg and gprof for timings -> printscreen is most time consuming
+!						-updated makefile to support "make clean"
 !
 !				TO DO:	optimize timing so game runs smoothly; fix Hyper Jump and look into cheats between levels
 !				BUGS:	forcefield destruction doesn't always work right; Hyper Jump cannot be reverted
@@ -357,8 +360,10 @@ END IF
 
 CALL init_random_seed()		!randomly pick a new random number seed
 IF (cheat(2) .EQV. .TRUE.) lives=5						!cheat(2)==.TRUE. -> Fiver Active
-IF ((gametype=='Standard').AND.(cheat(3) .EQV. .TRUE.)) wave=cheatWave-1	!Skip levels via Hyper Jump cheat
-CALL wave_set(invader,elaser,laser,powerup,x00,row,col,charge,updown,wave,endgame,rate,spawn,gcounter)
+IF (gametype=='Standard') THEN
+	IF (cheat(3) .EQV. .TRUE.) wave=cheatWave-1				!Skip levels via Hyper Jump cheat
+	CALL wave_set(invader,elaser,laser,powerup,x00,row,col,charge,updown,wave,endgame,rate,spawn,gcounter)
+END IF
 
 	!Print initial position
 CALL execute_command_line('clear')	!Clear screen before printing

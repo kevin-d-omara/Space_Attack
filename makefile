@@ -1,4 +1,4 @@
-CC=gfortran
+CC = gfortran
 
 Spacemake: Engine/Space_Attack.f90 Engine/primaries_sub.f90 Engine/sys_keyin.c Engine/menus.f90 Graphics/lose_animation.f90 Graphics/graphics_sub.f90
 	@echo building object files
@@ -22,3 +22,8 @@ Spacemake: Engine/Space_Attack.f90 Engine/primaries_sub.f90 Engine/sys_keyin.c E
 	@echo To play, type: ./Space_Attack
 	@echo --------------------------------------
 	@echo
+
+clean:
+	$(RM) Engine/*.o
+	$(RM) Graphics/*.o
+	$(RM) Settings/settings.mod
