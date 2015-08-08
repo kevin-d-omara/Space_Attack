@@ -18,7 +18,7 @@
 !	>gfortran -fopenmp sys_keyin.o graphics_sub.o primaries_sub.o lose_animation.o menus.o Space_Attack.o
 !	>./a.out	=) enjoy!
 !
-! Latest Version: 1.9.7.3
+! Latest Version: 1.9.7.4
 !
 !	Changelog:
 !		//(1.0.0) //02/25/15 	created
@@ -57,6 +57,9 @@
 !			  //06/09/15		-fixed bug with Endless gametype still spawning wave 1
 !						-did preliminary testing with -pg and gprof for timings -> printscreen is most time consuming
 !						-updated makefile to support "make clean"
+!			  //08/8/15			- hotfix : removed 'execute_command clear screen' in subroutine Initialize
+!					as it was unecessary and caused portability issues
+!								- aslo updated README with newer, more pertinent information
 !
 !				TO DO:	optimize timing so game runs smoothly; fix Hyper Jump and look into cheats between levels
 !				BUGS:	forcefield destruction doesn't always work right; Hyper Jump cannot be reverted
@@ -364,9 +367,6 @@ IF (gametype=='Standard') THEN
 	IF (cheat(3) .EQV. .TRUE.) wave=cheatWave-1				!Skip levels via Hyper Jump cheat
 	CALL wave_set(invader,elaser,laser,powerup,x00,row,col,charge,updown,wave,endgame,rate,spawn,gcounter)
 END IF
-
-	!Print initial position
-CALL execute_command_line('clear')	!Clear screen before printing
 
 RETURN
 END SUBROUTINE initialize
