@@ -68,9 +68,9 @@ First, navigate to the unzipped folder 'Space_Attack-master/'.  Then choose a me
 
 ####Compile Manually
   
-    gfortran -fopenmp -c Space_Attack.f90 primaries_sub.f90 graphics_sub.f90 lose_animation.f90 menus.f90 sys_keyin.c
+    gfortran -fopenmp -c Engine/Space_Attack.f90 Engine/menus.f90 Engine/primaries_sub.f90 Engine/sys_keyin.c Graphics/graphics_sub.f90 Graphics/lose_animation.f90
   
-    gfortran -fopenmp sys_keyin.o graphics_sub.o primaries_sub.o lose_animation.o menus.o Space_Attack.o
+    gfortran -fopenmp Space_Attack.o menus.o primaries_sub.o sys_keyin.o graphics_sub.o lose_animation.o -o Space_Attack.x
   
     export OMP_NUM_THREADS=2
 
