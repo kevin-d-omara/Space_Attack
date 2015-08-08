@@ -5,18 +5,13 @@
 ! To Compile with make:
 !	>make
 !	>export OMP_NUM_THREADS=2
-!	>./Space_Attack.out
+!	>./Space_Attack.x
 !
 ! To Compile manually:
-!	>export OMP_NUM_THREADS=16	(Must do this step every time you open a new terminal!)
-!	>gfortran -fopenmp -c Space_Attack.f90
-!	>gfortran -c sys_keyin.c
-!	>gfortran -c graphics_sub.f90
-!	>gfortran -c primaries_sub.f90
-!	>gfortran -c lose_animation.f90
-!	>gfortran -c menus.f90
-!	>gfortran -fopenmp sys_keyin.o graphics_sub.o primaries_sub.o lose_animation.o menus.o Space_Attack.o
-!	>./a.out	=) enjoy!
+!	>gfortran -fopenmp -c Engine/Space_Attack.f90 Engine/menus.f90 Engine/primaries_sub.f90 Engine/sys_keyin.c Graphics/graphics_sub.f90 Graphics/lose_animation.f90
+!	>gfortran -fopenmp Space_Attack.o menus.o primaries_sub.o sys_keyin.o graphics_sub.o lose_animation.o -o Space_Attack.x
+!	>export OMP_NUM_THREADS=2
+!	>./Space_Attack.x
 !
 ! Latest Version: 1.9.7.4
 !
