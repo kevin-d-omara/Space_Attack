@@ -5,25 +5,41 @@ Retro "Space Invaders" style arcade game made in Fortran.
 
 [install intructions at the end]
 
-This is an arcade game which plays inside of a terminal.  Bonus points if you use the Cool Retro Term (https://github.com/Swordfish90/cool-retro-term)
+This is an arcade game which plays inside of a terminal.  Bonus points if you use the [Cool Retro Term](https://github.com/Swordfish90/cool-retro-term), as seen in the screenshots.
 
 ##NOTE:
-Due to Fortran limitations (or my lack of knowledge ...) you *must* press the [enter] key after every. single. keystroke.  This includes during the menu and the game.  So, if you want to move or shoot, press the appropriate key AND enter.
+1) Due to Fortran limitations (or my lack of knowledge ...) you *must* press the [enter] key after every. single. keystroke.  This includes during the menu and the game.  Each time you wish to move, shoot, etc, press the appropriate key AND enter.
 
-#Controls (default):
-Shoot - 'W'
+2) This game operates using parallel processing.  Therefore, each time you open up a new terminal and wish to play, you must first type
 
-Move Right - 'D'
+    export OMP_NUM_THREADS=2
 
-Move Left - 'A'
+##Controls (default):
+Shoot
 
-  -- Special Ordinance --
+    W
+
+Move Right
+
+    D
+
+Move Left
+
+    A
+
+######Special Ordinance
   
-Scattershot - 1
+Scattershot
 
-Vaporizer - 2
+    1
 
-Missile - 3
+Vaporizer
+
+    2
+
+Missile
+
+    3
 
 
 ##Screenshots
@@ -32,19 +48,25 @@ Missile - 3
 ![Image](<http://i.imgur.com/x0Sbp4n.png>)
 *Screen shots were taken using the Cool-Retro-Term terminal, found at: https://github.com/Swordfish90/cool-retro-term
 
-##Compile
-Space Attack utilizes OpenMP to handle parallel tasks and is spread across multiple files.  It therefore requires a couple of extra steps to compile.
+#How to Run the Game
+Inside your terminal navigate to the unzipped folder 'Space_Attack-master/'.  Type the following at the command prompt:
 
-The easiest way to compile the game is to use "make".  Change to the directory containing the game files and type the following after the command prompt:
+    export OMP_NUM_THREADS=2
+    
+    ./Space_Attack.x
+
+##Install Instructions (How to Compile)
+The game comes pre-compiled.  If for some reason you wish to compile the game, do the following:
+
+First, navigate to the unzipped folder 'Space_Attack-master/'.  Then choose a method below and type each line at the command prompt.
+
+####Compile with Make
 
     make
   
     export OMP_NUM_THREADS=2
-  
-  Viola!  Now type "./Space_Attack" and enjoy =)
-  
-  
-To compile manually instead, type the following after the command prompt:
+
+####Compile Manually
   
     gfortran -fopenmp -c Space_Attack.f90 primaries_sub.f90 graphics_sub.f90 lose_animation.f90 menus.f90 sys_keyin.c
   
@@ -52,8 +74,7 @@ To compile manually instead, type the following after the command prompt:
   
     export OMP_NUM_THREADS=2
 
-Now type "./a.out" and enjoy!
-
 *Note: you may copy and paste the above commands into your terminal instead of typing them manually.
 
-*Note: Each time you open a new terminal you must type "export OMP_NUM_THREADS=2" before running the game. 
+####REMINDER
+- Each time you open a new terminal you *must* type "export OMP_NUM_THREADS=2" before running the game. 
