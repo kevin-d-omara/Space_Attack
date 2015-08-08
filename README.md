@@ -41,6 +41,9 @@ Missile
 
     3
 
+##Gameplay Video
+*the game has no sound ... yet*
+[![Image](<http://i.imgur.com/8yRfVcb.png>)](https://www.youtube.com/watch?v=TSOmxRPeW0w)
 
 ##Screenshots
 ![Image](<http://i.imgur.com/qNdxfxM.png>)
