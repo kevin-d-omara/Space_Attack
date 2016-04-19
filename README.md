@@ -42,7 +42,7 @@ Missile
     3
 
 ##Gameplay Video
-*the game has no sound ... yet*
+*Note: the game has no sound.*
 [![Image](<http://i.imgur.com/8yRfVcb.png>)](https://www.youtube.com/watch?v=TSOmxRPeW0w)
 
 ##Screenshots
