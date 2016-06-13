@@ -8,9 +8,7 @@ Retro "Space Invaders" style arcade game made in Fortran.
 This is an arcade game which plays inside of a terminal.  Bonus points if you use the [Cool Retro Term](https://github.com/Swordfish90/cool-retro-term), as seen in the screenshots.
 
 ##NOTE:
-1) Due to Fortran limitations (or my lack of knowledge ...) you *must* press the [enter] key after every. single. keystroke.  This includes during the menu and the game.  Each time you wish to move, shoot, etc, press the appropriate key AND enter.
-
-2) This game operates using parallel processing.  Therefore, each time you open up a new terminal and wish to play, you must first type
+1) This game operates using parallel processing.  Therefore, each time you open up a new terminal and wish to play, you must first type
 
     export OMP_NUM_THREADS=2
 
@@ -71,9 +69,9 @@ First, navigate to the unzipped folder 'Space_Attack-master/'.  Then choose a me
 
 ####Compile Manually
   
-    gfortran -fopenmp -c Engine/Space_Attack.f90 Engine/menus.f90 Engine/primaries_sub.f90 Engine/sys_keyin.c Graphics/graphics_sub.f90 Graphics/lose_animation.f90
+    gfortran -fopenmp -c Engine/Space_Attack.f90 Engine/menus.f90 Engine/primaries_sub.f90 Engine/c_timer.c Engine/c_io_routines.c Graphics/graphics_sub.f90 Graphics/lose_animation.f90
   
-    gfortran -fopenmp Space_Attack.o menus.o primaries_sub.o sys_keyin.o graphics_sub.o lose_animation.o -o Space_Attack.x
+    gfortran -fopenmp Space_Attack.o menus.o primaries_sub.o c_timer.o c_io_routines.o graphics_sub.o lose_animation.o -o Space_Attack.x
   
     export OMP_NUM_THREADS=2
 
