@@ -13,7 +13,7 @@
 !	>export OMP_NUM_THREADS=2
 !	>./Space_Attack.x
 !
-! Latest Version: 1.9.7.4
+! Latest Version: 1.9.8.0
 !
 !	Changelog:
 !		//(1.0.0) //02/25/15 	created
@@ -55,6 +55,8 @@
 !			  //08/8/15			- hotfix : removed 'execute_command clear screen' in subroutine Initialize
 !					as it was unecessary and caused portability issues
 !								- aslo updated README with newer, more pertinent information
+!		//(1.9.8.0) //06/12/16	added c_io_routine:
+!								- no longer need to hit enter after commands
 !
 !				TO DO:	optimize timing so game runs smoothly; fix Hyper Jump and look into cheats between levels
 !				BUGS:	forcefield destruction doesn't always work right; Hyper Jump cannot be reverted
@@ -68,6 +70,19 @@ MODULE settings			!This MODULE is to protect player settings.
 	CHARACTER(1), DIMENSION(2,5) :: control
 	INTEGER :: difficulty
 END MODULE settings
+
+MODULE c_io_routines	!This MODULE is to protect player settings.
+	use iso_c_binding, only : C_CHAR, C_NULL_CHAR
+	implicit none
+	interface
+		subroutine change_char(thisChar)
+			use iso_c_binding, only : C_CHAR
+			character ( kind = C_CHAR ) :: buf
+			character ( kind = C_CHAR ) :: thisChar
+		end subroutine change_char
+	end interface
+END MODULE c_io_routines
+
 !
 ! ------------------------- Main Program --------------------------------
 !
@@ -76,7 +91,9 @@ PROGRAM array_invaders
 ! --------------------- Variable declarations ---------------------------
 
 	USE settings
+	USE c_io_routines
 	IMPLICIT NONE
+	
 	INTEGER, PARAMETER :: row=19, col=15	!#rows must be = 4N+3 for code to work // (X-3)/4=N
 	INTEGER :: endgame, x00, i, j, k, h, frame, charge, updown, shots, kills, hits, dframe, limit
 	INTEGER ::  score, wincon, wave, last, length(row), row_num(row), lives, eplaser, flop, score2
@@ -116,7 +133,7 @@ DO WHILE(yesno==1)	!GAME START
 			IF (rblank .EQV. .FALSE.) THEN
 				CALL enter_command(command)	!read menu choice
 			ELSE
-				READ(*,*)			!press enter
+				CALL hit_any_key
 			END IF
 		END IF											!determine which option was selected
 		CALL which_option(command,wchoice,wmenu,manim,rblank,control,difficulty,&
@@ -759,12 +776,12 @@ END SUBROUTINE printscreen
 
 !-------Enter Command-------Enter Command-------Enter Command-------Enter Command-------Enter Command-------
 SUBROUTINE enter_command(command)	!This subroutine continuously loops parallel to the main program and allows
-	IMPLICIT NONE			!the user to enter their command
+									!the user to enter their command
+	USE c_io_routines
+	
 	CHARACTER(1) :: command
 
-CALL SYS_KEYSET(1)		!Use FGET (Fortran implicit) instead?
-READ(*,*) command
-CALL SYS_KEYSET(0)		!See sys_keyin.c for more information.  Hide user input and does not advance the line.
+CALL change_char(command)	! reads a single character; does not require enter key
 
 RETURN
 END SUBROUTINE enter_command

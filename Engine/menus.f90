@@ -32,6 +32,7 @@ END SUBROUTINE menu_initialize
 ! to the next menu selected.
 SUBROUTINE which_option(command,wchoice,wmenu,manim,rblank,control,difficulty,gametype,num_ordinance,&
 							total,ordinancepoints,yesno,lives,cheat,cheatWave)
+	USE c_io_routines
 	IMPLICIT NONE
 	CHARACTER(1) :: command
 	CHARACTER(1), DIMENSION(2,5) :: control
@@ -357,7 +358,7 @@ option_selector: SELECT CASE(wmenu)
 				wchoice=1	!flag choice
 				manim=.TRUE.	!flag animation on
 			ELSE
-				READ(*,*) command!read command
+				CALL change_char(command)!read command
 				control(1,1)=command	!read "shoot" key
 				manim=.FALSE.	!de-flag menu animation
 			END IF
@@ -366,7 +367,7 @@ option_selector: SELECT CASE(wmenu)
 				wchoice=2	!flag choice
 				manim=.TRUE.	!flag animation on
 			ELSE
-				READ(*,*) command!read command
+				CALL change_char(command)!read command
 				control(1,2)=command	!read "right" key
 				manim=.FALSE.	!de-flag menu animation
 			END IF
@@ -375,7 +376,7 @@ option_selector: SELECT CASE(wmenu)
 				wchoice=3	!flag choice
 				manim=.TRUE.	!flag animation on
 			ELSE
-				READ(*,*) command!read command
+				CALL change_char(command)!read command
 				control(1,3)=command	!read "left" key
 				manim=.FALSE.	!de-flag menu animation
 			END IF
@@ -384,7 +385,7 @@ option_selector: SELECT CASE(wmenu)
 				wchoice=4	!flag choice
 				manim=.TRUE.	!flag animation on
 			ELSE
-				READ(*,*) command!read command
+				CALL change_char(command)!read command
 				control(2,1)=command!read "scattershot" key
 				manim=.FALSE.	!de-flag menu animation
 			END IF
@@ -393,7 +394,7 @@ option_selector: SELECT CASE(wmenu)
 				wchoice=5	!flag choice
 				manim=.TRUE.	!flag animation on
 			ELSE
-				READ(*,*) command!read command
+				CALL change_char(command)!read command
 				control(2,2)=command!read "vaporizer" key
 				manim=.FALSE.	!de-flag menu animation
 			END IF
@@ -402,7 +403,7 @@ option_selector: SELECT CASE(wmenu)
 				wchoice=6	!flag choice
 				manim=.TRUE.	!flag animation on
 			ELSE
-				READ(*,*) command!read command
+				CALL change_char(command)!read command
 				control(2,3)=command	!read "missile" key
 				manim=.FALSE.	!de-flag menu animation
 			END IF
@@ -411,7 +412,7 @@ option_selector: SELECT CASE(wmenu)
 				wchoice=7	!flag choice
 				manim=.TRUE.	!flag animation on
 			ELSE
-				READ(*,*) command!read command
+				CALL change_char(command)!read command
 				control(1,4)=command	!read "pause" key
 				manim=.FALSE.	!de-flag menu animation
 			END IF
@@ -647,16 +648,13 @@ menu_selector: SELECT CASE(wmenu)
 		string(k)='and type: export OMP_NUM_THREADS=2'
 		length(k)=34;	row_num(k)=13; k=k+1
 
-		string(k)='YOU MUST PRESS ENTER AFTER EVERY COMMAND'
-		length(k)=40;	row_num(k)=15; k=k+1
-
 		string(k)='Press any key to continue.'
 		length(k)=26;	row_num(k)=17; k=k+1
 
 		string(k)="by Kevin O'Mara"
 		length(k)=15;	row_num(k)=20; k=k+1
 
-		string(k)='version 1.9.7.4'
+		string(k)='version 1.9.8.0'
 		length(k)=15;	row_num(k)=row+3; k=k+1
 
 		last=k-1
