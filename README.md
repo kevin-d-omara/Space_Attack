@@ -1,81 +1,64 @@
 Space Attack
 ======================
-Retro "Space Invaders" style arcade game made in Fortran.
+A high-octane bullet-hell shooter, inspired by Space Invaders.
 -----------------------------------------------------------------------------------
 
-[install intructions at the end]
+## Description
 
-This is an arcade game which plays inside of a terminal.  Bonus points if you use the [Cool Retro Term](https://github.com/Swordfish90/cool-retro-term), as seen in the screenshots.
+You are an ace gunner operating a mobile defense laser.
+Swarms of voracious alien space craft are bearing down on Earth.
+Numerous Invaders, fearsome Bombers, armored Carriers, and more dizzyingly devious death-machines.
+Engage the maurading alien space craft, but watch out for incoming plasma!
+Use your powerful, limited ordinance to high effect.
+Survive 9 waves of onslaught and destroy the mothership to save Earth!
 
-##NOTE:
-1) This game operates using parallel processing.  Therefore, each time you open up a new terminal and wish to play, you must first type
+After halting the invasion, gear up for the endless gauntlet.
+Pick your loadout, survive as long as you can, and set the highest score.
+Then, grin as your friends fail to usurp your glory!
 
-    export OMP_NUM_THREADS=2
+## Controls (default):
+Command | Key
+--- | :---:
+Fire Laser | W
+Move Left/Right | A/D
+Pause | P
 
-##Controls (default):
-Shoot
+Special Ordinance | Key | Damage | Effect
+--- | :---: | :---: |---
+Fire Scattershot | 1 | 1 | Pierces through the first target.
+Fire Vaporizer | 2 | 3 | High powered attack.
+Fire Missile | 3 | 2 | 3x3 Area of Effect.
 
-    W
+*Controls can be changed in-game.*
+*For more gameplay information, see the in-game Guide.*
 
-Move Right
-
-    D
-
-Move Left
-
-    A
-
-######Special Ordinance
-  
-Scattershot
-
-    1
-
-Vaporizer
-
-    2
-
-Missile
-
-    3
-
-##Gameplay Video
-*Note: the game has no sound.*
+## Gameplay Video
+*--The game has no sound.--*
 [![Image](<http://i.imgur.com/8yRfVcb.png>)](https://www.youtube.com/watch?v=TSOmxRPeW0w)
 
-##Screenshots
+## Screenshots
 ![Image](<http://i.imgur.com/qNdxfxM.png>)
 ![Image](<http://i.imgur.com/a8E6ww0.png>)
 ![Image](<http://i.imgur.com/x0Sbp4n.png>)
-*Screen shots were taken using the Cool-Retro-Term terminal, found at: https://github.com/Swordfish90/cool-retro-term
+*Screen shots were taken playing in the [Cool Retro Term](https://github.com/Swordfish90/cool-retro-term).*
 
-#How to Run the Game
-Inside your terminal navigate to the unzipped folder 'Space_Attack-master/'.  Type the following at the command prompt:
+## Build Instructions (Linux)
+### Dependencies
+Make sure to install `gfortran` first.
+```
+sudo apt-get install gfortran
+```
 
-    export OMP_NUM_THREADS=2
-    
-    ./Space_Attack.x
+### Compile
+```sh
+# Get it from GitHub.
+git clone https://github.com/kevin-d-omara/Space_Attack.git
 
-##Install Instructions (How to Compile)
-The game comes pre-compiled.  If for some reason you wish to compile the game, do the following:
+# Compile it.
+cd Space_Attack
+make
 
-First, navigate to the unzipped folder 'Space_Attack-master/'.  Then choose a method below and type each line at the command prompt.
-
-####Compile with Make
-
-    make
-  
-    export OMP_NUM_THREADS=2
-
-####Compile Manually
-  
-    gfortran -fopenmp -c Engine/Space_Attack.f90 Engine/menus.f90 Engine/primaries_sub.f90 Engine/c_timer.c Engine/c_io_routines.c Graphics/graphics_sub.f90 Graphics/lose_animation.f90
-  
-    gfortran -fopenmp Space_Attack.o menus.o primaries_sub.o c_timer.o c_io_routines.o graphics_sub.o lose_animation.o -o Space_Attack.x
-  
-    export OMP_NUM_THREADS=2
-
-*Note: you may copy and paste the above commands into your terminal instead of typing them manually.
-
-####REMINDER
-- Each time you open a new terminal you *must* type "export OMP_NUM_THREADS=2" before running the game. 
+# Have fun!
+export OMP_NUM_THREADS=2
+./Space_Attack.x
+```
